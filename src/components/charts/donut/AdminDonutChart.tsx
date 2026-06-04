@@ -3,10 +3,8 @@
 import { useApexChartTheme } from "@/hooks/useApexChartTheme";
 import { buildDonutChartOptions } from "@/lib/apex-chart-presets";
 import type { ApexOptions } from "apexcharts";
-import dynamic from "next/dynamic";
+import ReactApexChart from "@/components/charts/ReactApexChartClient";
 import { useMemo } from "react";
-
-const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 export type AdminDonutChartProps = {
   labels: string[];

@@ -22,7 +22,11 @@ export function getApexChartBase(isDark: boolean): ApexOptions {
     yaxis: {
       labels: { style: { fontSize: "11px", colors: labelColor } },
     },
-    tooltip: { theme: isDark ? "dark" : "light" },
+    tooltip: {
+      theme: isDark ? "dark" : "light",
+      shared: true,
+      intersect: false,
+    },
     legend: {
       labels: { colors: labelColor },
     },

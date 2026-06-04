@@ -102,18 +102,27 @@ export function buildAreaChartOptions(
   categories: string[],
   extra?: Partial<ApexOptions>,
 ): ApexOptions {
+  const { chart: extraChart, xaxis: extraXaxis, tooltip: extraTooltip, ...restExtra } = extra ?? {};
+
   return {
     ...baseChart,
+    ...restExtra,
     colors: extra?.colors ?? [BISA_CHART_COLORS[0], BISA_CHART_COLORS[2]],
-    chart: { ...baseChart.chart, type: "area", height: extra?.chart?.height ?? 310 },
-    stroke: { curve: "smooth", width: 2 },
-    dataLabels: { enabled: false },
+    chart: {
+      ...baseChart.chart,
+      ...extraChart,
+      type: "area",
+      height: extraChart?.height ?? 310,
+    },
+    stroke: { curve: "smooth", width: 2, ...extra?.stroke },
+    dataLabels: { enabled: false, ...extra?.dataLabels },
     fill: {
       type: "gradient",
       gradient: { opacityFrom: 0.45, opacityTo: 0.05 },
+      ...extra?.fill,
     },
-    xaxis: { ...baseChart.xaxis, categories },
-    ...extra,
+    xaxis: { ...baseChart.xaxis, categories, ...extraXaxis },
+    tooltip: { ...baseChart.tooltip, ...extraTooltip },
   };
 }
 
@@ -124,20 +133,31 @@ export function buildBarChartOptions(
   horizontal = false,
   extra?: Partial<ApexOptions>,
 ): ApexOptions {
+  const { chart: extraChart, xaxis: extraXaxis, tooltip: extraTooltip, plotOptions: extraPlot, ...restExtra } =
+    extra ?? {};
+
   return {
     ...baseChart,
+    ...restExtra,
     colors: extra?.colors ?? [BISA_CHART_COLORS[0]],
-    chart: { ...baseChart.chart, type: "bar", height: extra?.chart?.height ?? 280 },
+    chart: {
+      ...baseChart.chart,
+      ...extraChart,
+      type: "bar",
+      height: extraChart?.height ?? 280,
+    },
     plotOptions: {
+      ...extraPlot,
       bar: {
         horizontal,
         borderRadius: 4,
         columnWidth: horizontal ? undefined : "55%",
         barHeight: horizontal ? "60%" : undefined,
+        ...extraPlot?.bar,
       },
     },
-    dataLabels: { enabled: false },
-    xaxis: { ...baseChart.xaxis, categories },
-    ...extra,
+    dataLabels: { enabled: false, ...extra?.dataLabels },
+    xaxis: { ...baseChart.xaxis, categories, ...extraXaxis },
+    tooltip: { ...baseChart.tooltip, ...extraTooltip },
   };
 }
