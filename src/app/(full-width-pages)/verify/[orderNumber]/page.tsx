@@ -1,0 +1,85 @@
+import Link from "next/link";
+import { PublicPageShell } from "@/components/public/PublicPageShell";
+import { fetchPublicApi } from "@/lib/public-api";
+
+type VerifyData = {
+  orderNumber: string;
+  status: string;
+  createdAt: string;
+  totalQuantity: unknown;
+  specifications?: unknown;
+  verificationStatus: string;
+  seller?: { fullName?: string };
+  items?: Array<{ product?: { name?: string; biomassaType?: string } }>;
+};
+
+export default async function VerifyOrderPage({
+  params,
+}: {
+  params: Promise<{ orderNumber: string }>;
+}) {
+  const { orderNumber } = await params;
+  const decoded = decodeURIComponent(orderNumber);
+
+  let data: VerifyData | null = null;
+  let error: string | null = null;
+
+  try {
+    const res = await fetchPublicApi<VerifyData>(
+      `/orders/verify/${encodeURIComponent(decoded)}`,
+    );
+    data = res.data;
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Kontrak tidak ditemukan";
+  }
+
+  return (
+    <PublicPageShell
+      title="Hasil Verifikasi"
+      subtitle={decoded}
+    >
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">
+          {error}
+        </div>
+      ) : data ? (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-[#86EFAC] bg-[#DCFCE7] p-4">
+            <p className="text-sm font-bold text-[#135122]">
+              ✓ Terverifikasi oleh BISA B2B
+            </p>
+            <p className="mt-1 text-xs text-[#166534]">{data.verificationStatus}</p>
+          </div>
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+            <dl className="grid gap-3 text-sm">
+              <div>
+                <dt className="text-[#64748B]">Nomor kontrak</dt>
+                <dd className="font-semibold">{data.orderNumber}</dd>
+              </div>
+              <div>
+                <dt className="text-[#64748B]">Status pesanan</dt>
+                <dd className="font-semibold">{data.status}</dd>
+              </div>
+              <div>
+                <dt className="text-[#64748B]">Supplier</dt>
+                <dd className="font-semibold">{data.seller?.fullName ?? "—"}</dd>
+              </div>
+              {data.items?.map((item, i) => (
+                <div key={i}>
+                  <dt className="text-[#64748B]">Produk</dt>
+                  <dd className="font-semibold">{item.product?.name ?? "—"}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <Link
+            href={`/track/${encodeURIComponent(data.orderNumber)}`}
+            className="block text-center text-sm font-semibold text-[#135122] hover:underline"
+          >
+            Lacak pengiriman pesanan ini →
+          </Link>
+        </div>
+      ) : null}
+    </PublicPageShell>
+  );
+}

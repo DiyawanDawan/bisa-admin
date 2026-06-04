@@ -78,6 +78,7 @@ const navItems: NavItem[] = [
       { name: "Artikel / Blog", path: "/content/articles" },
       { name: "FAQ", path: "/content/faqs" },
       { name: "Kebijakan", path: "/content/policies" },
+      { name: "Pengaturan Platform", path: "/content/platform-settings" },
     ],
   },
   {
