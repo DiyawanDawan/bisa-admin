@@ -12,7 +12,22 @@ import {
 import { fetchKYCQueue, reviewKYC } from "@/lib/api/admin";
 import { formatDate } from "@/lib/format";
 import type { KYCQueueItem } from "@/types/admin";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+
+function DocLink({ href, label }: { href?: string | null; label: string }) {
+  if (!href) return null;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-theme-xs text-brand-600 hover:underline dark:text-brand-400"
+    >
+      {label}
+    </a>
+  );
+}
 
 export default function KYCQueueTable() {
   const [items, setItems] = useState<KYCQueueItem[]>([]);
@@ -80,6 +95,9 @@ export default function KYCQueueTable() {
                 Pengguna
               </TableCell>
               <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
+                Dokumen
+              </TableCell>
+              <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
                 Status
               </TableCell>
               <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
@@ -99,6 +117,7 @@ export default function KYCQueueTable() {
                 <TableCell />
                 <TableCell />
                 <TableCell />
+                <TableCell />
               </TableRow>
             )}
             {!loading &&
@@ -107,6 +126,26 @@ export default function KYCQueueTable() {
                   <TableCell className="px-4 py-3 text-sm">
                     <div className="font-medium">{item.user.fullName}</div>
                     <div className="text-theme-xs text-gray-400">{item.user.email}</div>
+                    <Link
+                      href={`/users/${item.userId}`}
+                      className="text-theme-xs text-brand-600 hover:underline dark:text-brand-400"
+                    >
+                      Lihat dossier →
+                    </Link>
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
+                    <div className="flex flex-wrap gap-2">
+                      <DocLink href={item.ktpUrl} label="KTP" />
+                      <DocLink href={item.selfieUrl} label="Selfie" />
+                      <DocLink href={item.nibUrl} label="NIB" />
+                      <DocLink href={item.siupUrl} label="SIUP" />
+                      {!item.ktpUrl && !item.selfieUrl && !item.nibUrl && !item.siupUrl ? (
+                        <span className="text-theme-xs text-gray-400">Tanpa URL</span>
+                      ) : null}
+                    </div>
+                    {item.businessName ? (
+                      <p className="mt-1 text-theme-xs text-gray-500">{item.businessName}</p>
+                    ) : null}
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     <Badge color="warning" size="sm">

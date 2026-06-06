@@ -1,17 +1,15 @@
 export type UserRole = "ADMIN" | "BUYER" | "SUPPLIER";
 export type UserStatus = "ACTIVE" | "BLOCKED" | "INACTIVE" | "DELETED";
 export type OrderStatus =
-  | "PENDING_PAYMENT"
-  | "PAID"
+  | "PENDING"
+  | "CONFIRMED"
   | "PROCESSING"
   | "SHIPPED"
-  | "DELIVERED"
   | "COMPLETED"
   | "CANCELLED"
-  | "DISPUTED"
-  | "REFUNDED";
+  | "DISPUTED";
 
-export type DisputeStatus = "OPEN" | "SELLER_RESPONDED" | "RESOLVED" | "CLOSED";
+export type DisputeStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED";
 export type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
 
 export interface PaginationMeta {
@@ -70,6 +68,18 @@ export interface UserWalletSummary {
   totalWithdrawn?: number | string;
 }
 
+export interface RoleReadinessSummary {
+  ready: boolean;
+  missing: string[];
+  messages: string[];
+}
+
+export interface UserReadinessSummary {
+  role: string;
+  store: RoleReadinessSummary | null;
+  buyer: RoleReadinessSummary | null;
+}
+
 export interface UserDossier extends UserListItem {
   profile?: Record<string, unknown> | null;
   wallet?: UserWalletSummary | null;
@@ -82,6 +92,7 @@ export interface UserDossier extends UserListItem {
     totalAmount: number | string;
     createdAt: string;
   }>;
+  readiness?: UserReadinessSummary | null;
   _count?: {
     ordersAsBuyer: number;
     ordersAsSeller: number;
@@ -100,6 +111,7 @@ export interface UserDossierApiResponse {
     totalProducts: number;
   };
   recentOrders: UserDossier["recentOrders"];
+  readiness?: UserReadinessSummary | null;
 }
 
 export interface KYCQueueItem {
@@ -107,6 +119,11 @@ export interface KYCQueueItem {
   userId: string;
   verificationStatus: VerificationStatus;
   createdAt: string;
+  ktpUrl?: string | null;
+  selfieUrl?: string | null;
+  nibUrl?: string | null;
+  siupUrl?: string | null;
+  businessName?: string | null;
   user: { fullName: string; email: string };
 }
 
@@ -121,7 +138,50 @@ export interface OrderDispute {
   status: DisputeStatus;
   resolution?: string | null;
   resolutionNote?: string | null;
+  mediationStartedAt?: string | null;
+  readyToResolveAt?: string | null;
   createdAt: string;
+}
+
+export interface DisputeMediationMeta {
+  negotiationId: string | null;
+  mediationStartedAt: string | null;
+  readyToResolveAt: string | null;
+  adminMessageCount: number;
+  canMediate: boolean;
+  canMarkReady: boolean;
+  canResolve: boolean;
+}
+
+export interface DisputeChatMessage {
+  id: string;
+  negotiationId: string;
+  senderId: string;
+  content: string;
+  attachmentUrl?: string | null;
+  isSystemMessage: boolean;
+  isRead: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+  sender?: {
+    id: string;
+    fullName: string;
+    avatarUrl?: string | null;
+    role?: UserRole;
+  };
+}
+
+export interface DisputeChatThread {
+  negotiation: {
+    id: string;
+    status: string;
+    buyer: { id: string; fullName: string; email?: string };
+    seller: { id: string; fullName: string; email?: string };
+    product?: { id: string; name: string };
+  };
+  messages: DisputeChatMessage[];
+  mediation: DisputeMediationMeta;
+  pagination: PaginationMeta;
 }
 
 export interface DisputeOrder {
@@ -135,6 +195,8 @@ export interface DisputeOrder {
   buyer: { fullName: string; email?: string; phone?: string };
   seller: { fullName: string; email?: string; phone?: string };
   dispute?: OrderDispute | null;
+  negotiationId?: string | null;
+  mediation?: DisputeMediationMeta;
   items?: Array<{
     id: string;
     quantity: number;
@@ -212,7 +274,7 @@ export type ProductStatus =
 
 export type CategoryType = "PRODUK" | "FORUM" | "ARTICLE";
 export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-export type PayoutStatus = "COMPLETED" | "FAILED";
+export type PayoutStatus = "COMPLETED" | "FAILED" | "RELEASED" | "PENDING" | "ESCROW_HELD" | "REFUNDED";
 
 export interface ProductListItem {
   id: string;
@@ -299,4 +361,60 @@ export interface BroadcastHistoryItem {
 export interface BroadcastResult {
   success: boolean;
   count: number;
+}
+
+export interface DashboardPlatformAnalytics {
+  summary: {
+    totalProducts: number;
+    activeProducts: number;
+    certifiedProducts: number;
+    productsThisMonth: number;
+    totalStoreBanners: number;
+    activeStoreBanners: number;
+    suppliersWithBanner: number;
+    activeSuppliers: number;
+    publishedForumPosts: number;
+    pendingKyc: number;
+  };
+  productsByStatus: Array<{ status: ProductStatus; count: number }>;
+}
+
+export interface DashboardVisualGallery {
+  products: Array<{
+    id: string;
+    name: string;
+    status: ProductStatus;
+    pricePerUnit: number | string;
+    createdAt: string;
+    thumbnailUrl: string | null;
+    supplierName: string;
+    supplierAvatarUrl: string | null;
+  }>;
+  storeBanners: Array<{
+    id: string;
+    title: string | null;
+    imageUrl: string;
+    sortOrder: number;
+    createdAt: string;
+    storeName: string;
+    supplierId: string;
+    supplierAvatarUrl: string | null;
+  }>;
+  supplierStores: Array<{
+    id: string;
+    fullName: string;
+    companyName: string | null;
+    avatarUrl: string | null;
+    productCount: number;
+    bannerCount: number;
+  }>;
+  forumMedia: Array<{
+    id: string;
+    title: string;
+    imageUrl: string;
+    mediaCount: number;
+    createdAt: string;
+    authorName: string;
+    authorAvatarUrl: string | null;
+  }>;
 }

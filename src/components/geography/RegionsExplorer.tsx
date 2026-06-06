@@ -15,6 +15,11 @@ import {
   fetchAdminRegions,
   updateRegion,
 } from "@/lib/api/extended";
+import {
+  compactInputClass,
+  nativeSelectClass,
+} from "@/lib/form-classes";
+import { errorAlertClass, mutedTextClass } from "@/lib/theme-classes";
 import type { RegionAdminList, RegionAdminRow } from "@/types/content";
 import { useCallback, useEffect, useState } from "react";
 
@@ -277,7 +282,7 @@ export default function RegionsExplorer() {
                 "Daftar semua negara"
               ) : (
                 <>
-                  Di dalam: <span className="font-medium text-brand-700">{parentTrail}</span>
+                  Di dalam: <span className="font-medium text-brand-700 dark:text-brand-300">{parentTrail}</span>
                 </>
               )}
             </p>
@@ -296,7 +301,7 @@ export default function RegionsExplorer() {
                     key={item.id}
                     type="button"
                     onClick={() => jumpToStackIndex(i + 1)}
-                    className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-brand-700 hover:bg-brand-50 dark:border-gray-700 dark:hover:bg-brand-500/10"
+                    className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-brand-700 hover:bg-brand-50 dark:border-gray-700 dark:text-brand-300 dark:hover:bg-brand-500/10"
                   >
                     {item.name}
                   </button>
@@ -330,7 +335,7 @@ export default function RegionsExplorer() {
                 placeholder={`Cari nama ${LEVEL_LABELS[currentLevel].toLowerCase()}...`}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-10 min-w-[220px] flex-1 rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+                className={`min-w-[220px] flex-1 ${compactInputClass}`}
               />
               <Button type="button" size="sm" onClick={() => setShowAddForm((v) => !v)}>
                 {showAddForm ? "Tutup form" : `+ Tambah ${LEVEL_LABELS[currentLevel]}`}
@@ -338,7 +343,7 @@ export default function RegionsExplorer() {
             </div>
 
             {error && (
-              <div className="mb-4 rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">
+              <div className={`mb-4 ${errorAlertClass}`}>
                 {error}
               </div>
             )}
@@ -354,50 +359,50 @@ export default function RegionsExplorer() {
                 </p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-theme-xs text-gray-500">Nama</label>
+                    <label className={`mb-1 block text-theme-xs ${mutedTextClass}`}>Nama</label>
                     <input
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+                      className={compactInputClass}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-theme-xs text-gray-500">Kode unik</label>
+                    <label className={`mb-1 block text-theme-xs ${mutedTextClass}`}>Kode unik</label>
                     <input
                       required
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-gray-300 px-3 font-mono text-sm dark:border-gray-700 dark:bg-gray-900"
+                      className={`font-mono ${compactInputClass}`}
                     />
                   </div>
                   {(currentLevel === "province" || currentLevel === "regency") && (
                     <div>
-                      <label className="mb-1 block text-theme-xs text-gray-500">Kode pendek</label>
+                      <label className={`mb-1 block text-theme-xs ${mutedTextClass}`}>Kode pendek</label>
                       <input
                         value={shortCode}
                         onChange={(e) => setShortCode(e.target.value)}
-                        className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+                        className={compactInputClass}
                       />
                     </div>
                   )}
                   {currentLevel === "country" && (
                     <div>
-                      <label className="mb-1 block text-theme-xs text-gray-500">Benua</label>
+                      <label className={`mb-1 block text-theme-xs ${mutedTextClass}`}>Benua</label>
                       <input
                         value={continent}
                         onChange={(e) => setContinent(e.target.value)}
-                        className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+                        className={compactInputClass}
                       />
                     </div>
                   )}
                   {currentLevel === "village" && (
                     <div>
-                      <label className="mb-1 block text-theme-xs text-gray-500">Tipe</label>
+                      <label className={`mb-1 block text-theme-xs ${mutedTextClass}`}>Tipe</label>
                       <select
                         value={villageType}
                         onChange={(e) => setVillageType(e.target.value)}
-                        className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+                        className={compactInputClass}
                       >
                         <option value="DESA">DESA</option>
                         <option value="KELURAHAN">KELURAHAN</option>
@@ -418,7 +423,7 @@ export default function RegionsExplorer() {
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Belum ada {LEVEL_LABELS[currentLevel].toLowerCase()} di sini
                 </p>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className={`mt-1 text-sm ${mutedTextClass}`}>
                   {stack.length === 0
                     ? "Tambahkan negara pertama dengan tombol di atas."
                     : `Tambahkan entri baru, atau kembali dan pilih ${LEVEL_LABELS[stack[stack.length - 1].level]} lain.`}
@@ -493,7 +498,7 @@ export default function RegionsExplorer() {
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+                        className={`h-10 ${nativeSelectClass}`}
                   />
                 </div>
                 <div>
@@ -502,36 +507,36 @@ export default function RegionsExplorer() {
                     required
                     value={editCode}
                     onChange={(e) => setEditCode(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-gray-300 px-3 font-mono text-sm dark:border-gray-700 dark:bg-gray-900"
+                    className={`font-mono ${compactInputClass}`}
                   />
                 </div>
                 {(currentLevel === "province" || currentLevel === "regency") && (
                   <div>
-                    <label className="mb-1 block text-theme-xs text-gray-500">Kode pendek</label>
+                    <label className={`mb-1 block text-theme-xs ${mutedTextClass}`}>Kode pendek</label>
                     <input
                       value={editShortCode}
                       onChange={(e) => setEditShortCode(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+                      className={compactInputClass}
                     />
                   </div>
                 )}
                 {currentLevel === "country" && (
                   <div>
-                    <label className="mb-1 block text-theme-xs text-gray-500">Benua</label>
+                    <label className={`mb-1 block text-theme-xs ${mutedTextClass}`}>Benua</label>
                     <input
                       value={editContinent}
                       onChange={(e) => setEditContinent(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+                      className={compactInputClass}
                     />
                   </div>
                 )}
                 {currentLevel === "village" && (
                   <div>
-                    <label className="mb-1 block text-theme-xs text-gray-500">Tipe</label>
+                    <label className={`mb-1 block text-theme-xs ${mutedTextClass}`}>Tipe</label>
                     <select
                       value={editVillageType}
                       onChange={(e) => setEditVillageType(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+                      className={compactInputClass}
                     >
                       <option value="DESA">DESA</option>
                       <option value="KELURAHAN">KELURAHAN</option>

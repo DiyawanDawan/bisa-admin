@@ -6,6 +6,7 @@ import AdminAreaChart from "@/components/charts/area/AdminAreaChart";
 import AdminBarChart from "@/components/charts/bar/AdminBarChart";
 import AdminDonutChart from "@/components/charts/donut/AdminDonutChart";
 import AdminPieChart from "@/components/charts/pie/AdminPieChart";
+import DashboardVisualGallerySection from "@/components/dashboard/DashboardVisualGallery";
 import ComponentCard from "@/components/common/ComponentCard";
 import Badge from "@/components/ui/badge/Badge";
 import Alert from "@/components/ui/alert/Alert";
@@ -13,7 +14,9 @@ import Button from "@/components/ui/button/Button";
 import {
   fetchBiomassTrend,
   fetchCategoryAnalytics,
+  fetchDashboardPlatformAnalytics,
   fetchDashboardStats,
+  fetchDashboardVisualGallery,
   fetchIntegrationHealth,
   fetchRevenueChart,
   fetchTopSuppliers,
@@ -23,7 +26,9 @@ import { fetchOrderAnalytics } from "@/lib/api/extended";
 import { formatIDR, formatNumber, formatTons } from "@/lib/format";
 import type {
   ChartPoint,
+  DashboardPlatformAnalytics,
   DashboardStats,
+  DashboardVisualGallery,
   DonutChartData,
   RevenueChartData,
   TopSuppliersChartData,
@@ -33,7 +38,16 @@ import type { OrderAnalytics } from "@/types/extended";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type Tab = "ringkasan" | "produk" | "order";
+type Tab = "ringkasan" | "produk" | "order" | "platform";
+
+const PRODUCT_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Aktif",
+  INACTIVE: "Nonaktif",
+  BLOCKED: "Diblokir",
+  DRAFT: "Draft",
+  OUT_OF_STOCK: "Stok habis",
+  DELETED: "Dihapus",
+};
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Menunggu bayar",
@@ -81,6 +95,8 @@ export default function BisaDashboard() {
   const [categories, setCategories] = useState<DonutChartData | null>(null);
   const [suppliers, setSuppliers] = useState<TopSuppliersChartData | null>(null);
   const [orders, setOrders] = useState<OrderAnalytics | null>(null);
+  const [platform, setPlatform] = useState<DashboardPlatformAnalytics | null>(null);
+  const [visualGallery, setVisualGallery] = useState<DashboardVisualGallery | null>(null);
   const [integrationHealth, setIntegrationHealth] = useState<{
     generatedAt: string;
     summary: {
@@ -99,7 +115,7 @@ export default function BisaDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [s, rev, bio, usr, cat, sup, ord, integ] = await Promise.all([
+      const [s, rev, bio, usr, cat, sup, ord, plat, gallery, integ] = await Promise.all([
         fetchDashboardStats(),
         fetchRevenueChart(),
         fetchBiomassTrend(),
@@ -107,6 +123,8 @@ export default function BisaDashboard() {
         fetchCategoryAnalytics(),
         fetchTopSuppliers(),
         fetchOrderAnalytics().catch(() => null),
+        fetchDashboardPlatformAnalytics().catch(() => null),
+        fetchDashboardVisualGallery().catch(() => null),
         fetchIntegrationHealth().catch(() => null),
       ]);
       setStats(s);
@@ -116,6 +134,8 @@ export default function BisaDashboard() {
       setCategories(cat);
       setSuppliers(sup);
       setOrders(ord);
+      setPlatform(plat);
+      setVisualGallery(gallery);
       setIntegrationHealth(integ);
       setUpdatedAt(new Date());
     } catch {
@@ -175,7 +195,19 @@ export default function BisaDashboard() {
     { id: "ringkasan", label: "Ringkasan", hint: "Pendapatan & user" },
     { id: "produk", label: "Biomassa & Produk", hint: "Kategori & supplier" },
     { id: "order", label: "Aktivitas Order", hint: "Status & volume" },
+    { id: "platform", label: "Platform", hint: "Produk, toko, KYC" },
   ];
+
+  const productStatusChart = useMemo(() => {
+    if (!platform?.productsByStatus.length) {
+      return { labels: [] as string[], series: [] as number[] };
+    }
+    const sorted = [...platform.productsByStatus].sort((a, b) => b.count - a.count);
+    return {
+      labels: sorted.map((s) => PRODUCT_STATUS_LABELS[s.status] ?? s.status),
+      series: sorted.map((s) => s.count),
+    };
+  }, [platform]);
 
   return (
     <div className="space-y-6">
@@ -468,6 +500,92 @@ export default function BisaDashboard() {
           </div>
         </div>
       )}
+
+      {tab === "platform" && (
+        <div className="space-y-6">
+          {!platform && !loading ? (
+            <Alert
+              variant="warning"
+              title="Analitik platform tidak tersedia"
+              message="Endpoint analitik platform gagal dimuat."
+            />
+          ) : null}
+
+          {platform ? (
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+                <AdminMetricCard
+                  label="Produk aktif"
+                  value={formatNumber(platform.summary.activeProducts)}
+                  desc={`${formatNumber(platform.summary.totalProducts)} total`}
+                  href="/products"
+                />
+                <AdminMetricCard
+                  label="Produk sertifikasi"
+                  value={formatNumber(platform.summary.certifiedProducts)}
+                  href="/products"
+                />
+                <AdminMetricCard
+                  label="Produk bulan ini"
+                  value={formatNumber(platform.summary.productsThisMonth)}
+                  href="/products"
+                />
+                <AdminMetricCard
+                  label="Banner toko aktif"
+                  value={formatNumber(platform.summary.activeStoreBanners)}
+                  desc={`${formatNumber(platform.summary.suppliersWithBanner)} toko`}
+                />
+                <AdminMetricCard
+                  label="Supplier aktif"
+                  value={formatNumber(platform.summary.activeSuppliers)}
+                  href="/users"
+                />
+                <AdminMetricCard
+                  label="Post forum"
+                  value={formatNumber(platform.summary.publishedForumPosts)}
+                  href="/forum"
+                />
+                <AdminMetricCard
+                  label="Antrean KYC"
+                  value={formatNumber(platform.summary.pendingKyc)}
+                  href="/users/verifications"
+                  action={
+                    platform.summary.pendingKyc > 0 ? (
+                      <Badge color="warning" size="sm">
+                        Perlu review
+                      </Badge>
+                    ) : (
+                      <Badge color="success" size="sm">
+                        Kosong
+                      </Badge>
+                    )
+                  }
+                />
+              </div>
+
+              <ComponentCard title="Status produk" desc="Distribusi seluruh listing">
+                <AdminDonutChart
+                  labels={productStatusChart.labels}
+                  series={productStatusChart.series}
+                  centerLabel="Produk"
+                  formatTotal={formatNumber}
+                  formatValue={formatNumber}
+                  height={280}
+                  loading={loading}
+                  emptyMessage="Belum ada produk."
+                />
+              </ComponentCard>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      <ComponentCard
+        title="Galeri visual platform"
+        desc="Preview gambar produk, banner toko, supplier, dan media forum"
+      >
+        <DashboardVisualGallerySection data={visualGallery} loading={loading} />
+      </ComponentCard>
     </div>
   );
 }

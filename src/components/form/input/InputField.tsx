@@ -74,7 +74,7 @@ const Input: FC<InputProps> = ({
               ? "text-error-500"
               : success
               ? "text-success-500"
-              : "text-gray-500"
+              : "text-gray-500 dark:text-gray-400"
           }`}
         >
           {hint}

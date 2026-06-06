@@ -45,6 +45,7 @@ function statusBadge(status: string) {
 export default function DisputesTable() {
   const [items, setItems] = useState<DisputeOrder[]>([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("DISPUTED");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -58,6 +59,7 @@ export default function DisputesTable() {
         page,
         limit: 10,
         search: search.trim() || undefined,
+        statusFilter: statusFilter || undefined,
       });
       setItems(result.items);
       setTotal(result.total);
@@ -66,7 +68,7 @@ export default function DisputesTable() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, statusFilter]);
 
   useEffect(() => {
     load();
@@ -80,16 +82,30 @@ export default function DisputesTable() {
         <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
           Daftar Sengketa
         </h3>
-        <input
-          type="search"
-          placeholder="Cari order / nama..."
-          value={search}
-          onChange={(e) => {
-            setPage(1);
-            setSearch(e.target.value);
-          }}
-          className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900 sm:max-w-xs"
-        />
+        <div className="flex w-full flex-col gap-2 sm:max-w-md sm:flex-row">
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setPage(1);
+              setStatusFilter(e.target.value);
+            }}
+            className="h-10 rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+          >
+            <option value="DISPUTED">Sengketa aktif</option>
+            <option value="COMPLETED">Selesai</option>
+            <option value="CANCELLED">Dibatalkan</option>
+          </select>
+          <input
+            type="search"
+            placeholder="Cari order / nama..."
+            value={search}
+            onChange={(e) => {
+              setPage(1);
+              setSearch(e.target.value);
+            }}
+            className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+          />
+        </div>
       </div>
 
       {error && (
@@ -163,9 +179,31 @@ export default function DisputesTable() {
                     <div className="text-theme-xs text-gray-400">{order.seller.fullName}</div>
                   </TableCell>
                   <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                    {formatIDR(order.totalAmount)}
+                    {formatIDR(Number(order.totalAmount))}
                   </TableCell>
-                  <TableCell className="px-5 py-4">{statusBadge(order.status)}</TableCell>
+                  <TableCell className="px-5 py-4">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap gap-1">
+                        {statusBadge(order.status)}
+                        {order.mediation?.mediationStartedAt ? (
+                          <Badge color="warning" size="sm">
+                            Mediasi
+                          </Badge>
+                        ) : null}
+                        {order.mediation?.readyToResolveAt ? (
+                          <Badge color="success" size="sm">
+                            Siap putus
+                          </Badge>
+                        ) : null}
+                      </div>
+                      {order.mediation?.mediationStartedAt ? (
+                        <span className="text-theme-xs text-gray-400">
+                          {order.mediation.adminMessageCount} pesan admin
+                          {order.mediation.canResolve ? " · siap putus" : ""}
+                        </span>
+                      ) : null}
+                    </div>
+                  </TableCell>
                   <TableCell className="px-5 py-4 text-sm text-gray-500">
                     {formatDate(order.updatedAt)}
                   </TableCell>

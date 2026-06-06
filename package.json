@@ -6,6 +6,7 @@
     "dev": "next dev -p 3001",
     "dev:webpack": "next dev -p 3001 --webpack",
     "build": "next build",
+    "build:webpack": "next build --webpack",
     "start": "next start -p 3001",
     "verify:api": "powershell -ExecutionPolicy Bypass -File ./scripts/verify-integration.ps1",
     "lint": "eslint ."

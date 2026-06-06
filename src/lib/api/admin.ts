@@ -8,6 +8,9 @@ import type {
   DashboardStats,
   DisputeOrder,
   DisputeResolution,
+  DisputeMediationMeta,
+  DisputeChatThread,
+  DisputeChatMessage,
   FinanceStats,
   KYCQueueItem,
   PayoutItem,
@@ -21,6 +24,8 @@ import type {
   UserAnalyticsStats,
   DonutChartData,
   TopSuppliersChartData,
+  DashboardPlatformAnalytics,
+  DashboardVisualGallery,
   TransactionItem,
   UserDossier,
   UserDossierApiResponse,
@@ -71,6 +76,18 @@ export async function fetchTopSuppliers(): Promise<TopSuppliersChartData> {
   return res.data;
 }
 
+export async function fetchDashboardPlatformAnalytics(): Promise<DashboardPlatformAnalytics> {
+  const res = await apiGet<DashboardPlatformAnalytics>(
+    "/admin/dashboard/analytics/platform",
+  );
+  return res.data;
+}
+
+export async function fetchDashboardVisualGallery(): Promise<DashboardVisualGallery> {
+  const res = await apiGet<DashboardVisualGallery>("/admin/dashboard/visual-gallery");
+  return res.data;
+}
+
 export async function fetchIntegrationHealth(): Promise<{
   generatedAt: string;
   summary: {
@@ -98,11 +115,13 @@ export async function fetchDisputes(params?: {
   page?: number;
   limit?: number;
   search?: string;
+  statusFilter?: string;
 }): Promise<{ items: DisputeOrder[]; total: number; page: number; limit: number }> {
   const query = new URLSearchParams();
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.search) query.set("search", params.search);
+  if (params?.statusFilter) query.set("statusFilter", params.statusFilter);
 
   const qs = query.toString();
   const res = await apiGet<DisputeOrder[]>(
@@ -134,6 +153,51 @@ export async function resolveDispute(
   return res.data;
 }
 
+export async function fetchDisputeChat(
+  orderId: string,
+  params?: { page?: number; limit?: number },
+): Promise<DisputeChatThread> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  const qs = query.toString();
+  const res = await apiGet<DisputeChatThread>(
+    `/admin/orders/disputes/${orderId}/chat${qs ? `?${qs}` : ""}`,
+  );
+  return res.data;
+}
+
+export async function sendDisputeMediationMessage(
+  orderId: string,
+  content: string,
+): Promise<DisputeChatMessage> {
+  const res = await apiPost<DisputeChatMessage>(
+    `/admin/orders/disputes/${orderId}/chat/messages`,
+    { content },
+  );
+  return res.data;
+}
+
+export async function startDisputeMediation(
+  orderId: string,
+): Promise<DisputeMediationMeta> {
+  const res = await apiPost<DisputeMediationMeta>(
+    `/admin/orders/disputes/${orderId}/mediation/start`,
+    {},
+  );
+  return res.data;
+}
+
+export async function markDisputeReadyToResolve(
+  orderId: string,
+): Promise<DisputeMediationMeta> {
+  const res = await apiPost<DisputeMediationMeta>(
+    `/admin/orders/disputes/${orderId}/mediation/ready`,
+    {},
+  );
+  return res.data;
+}
+
 export async function fetchUsers(params?: {
   page?: number;
   limit?: number;
@@ -161,11 +225,23 @@ export async function fetchUsers(params?: {
   };
 }
 
-export async function fetchUserDossier(userId: string): Promise<UserDossier> {
+export async function fetchUserDossier(
+  userId: string,
+  options?: { unmask?: boolean },
+): Promise<UserDossier> {
+  const qs = options?.unmask ? "?unmask=true" : "";
   const res = await apiGet<UserDossierApiResponse>(
-    `/admin/users/${userId}/dossier`,
+    `/admin/users/${userId}/dossier${qs}`,
   );
-  const { profile, stats, recentOrders } = res.data;
+  const { profile, stats, recentOrders, readiness } = res.data;
+  type PayoutRow = {
+    id: string;
+    accountNumber: string;
+    accountName?: string;
+    accountHolderName?: string;
+    isMain: boolean;
+    bank?: { name: string; code?: string };
+  };
   return {
     id: profile.id,
     fullName: profile.fullName,
@@ -178,9 +254,16 @@ export async function fetchUserDossier(userId: string): Promise<UserDossier> {
     isPhoneVerified: profile.isPhoneVerified,
     profile: profile.profile,
     wallet: profile.wallet ?? null,
-    payoutAccounts: profile.payoutAccounts ?? [],
+    payoutAccounts: (profile.payoutAccounts ?? []).map((acc: PayoutRow) => ({
+      id: acc.id,
+      accountNumber: acc.accountNumber,
+      accountHolderName: acc.accountHolderName ?? acc.accountName ?? "—",
+      isMain: acc.isMain,
+      bank: acc.bank,
+    })),
     verification: profile.verification,
     recentOrders,
+    readiness: readiness ?? null,
     _count: {
       ordersAsBuyer: stats.totalBuyerOrders,
       ordersAsSeller: stats.totalSellerOrders,
@@ -310,11 +393,15 @@ export async function fetchTransactions(params?: {
   page?: number;
   limit?: number;
   search?: string;
+  type?: string;
+  status?: string;
 }): Promise<{ items: TransactionItem[]; total: number; page: number; limit: number }> {
   const query = new URLSearchParams();
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.search) query.set("search", params.search);
+  if (params?.type) query.set("type", params.type);
+  if (params?.status) query.set("status", params.status);
   const qs = query.toString();
   const res = await apiGet<TransactionItem[]>(
     `/admin/finance/transactions${qs ? `?${qs}` : ""}`,

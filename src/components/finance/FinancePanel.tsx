@@ -81,7 +81,7 @@ function txStatusColor(status: string): "success" | "warning" | "error" | "light
 
 function payoutStatusColor(status: string): "success" | "warning" | "error" | "light" {
   const s = status.toUpperCase();
-  if (s === "COMPLETED") return "success";
+  if (s === "COMPLETED" || s === "RELEASED") return "success";
   if (s === "PENDING" || s === "PROCESSING") return "warning";
   if (s === "FAILED") return "error";
   return "light";
@@ -116,6 +116,8 @@ export default function FinancePanel() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [txSearch, setTxSearch] = useState("");
+  const [txTypeFilter, setTxTypeFilter] = useState("");
+  const [txStatusFilter, setTxStatusFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -153,6 +155,8 @@ export default function FinancePanel() {
           page: 1,
           limit: 30,
           search: txSearch.trim() || undefined,
+          type: txTypeFilter || undefined,
+          status: txStatusFilter || undefined,
         });
         setTransactions(res.items);
       } else if (tab === "fees") {
@@ -166,7 +170,7 @@ export default function FinancePanel() {
     } finally {
       setLoading(false);
     }
-  }, [tab, txSearch]);
+  }, [tab, txSearch, txTypeFilter, txStatusFilter]);
 
   useEffect(() => {
     const q = tabFromQuery(searchParams.get("tab"));
@@ -479,19 +483,48 @@ export default function FinancePanel() {
       {tab === "transactions" && (
         <ComponentCard title="Ledger transaksi" desc="Semua pergerakan dana terkait escrow">
           <form
-            className="mb-4 flex max-w-md flex-col gap-2 sm:flex-row sm:items-end"
+            className="mb-4 flex max-w-3xl flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end"
             onSubmit={(e) => {
               e.preventDefault();
               loadTab();
             }}
           >
-            <div className="flex-1">
+            <div className="min-w-[140px] flex-1">
               <Label>Cari user</Label>
               <Input
                 placeholder="Nama user..."
                 value={txSearch}
                 onChange={(e) => setTxSearch(e.target.value)}
               />
+            </div>
+            <div className="min-w-[140px]">
+              <Label>Tipe</Label>
+              <select
+                value={txTypeFilter}
+                onChange={(e) => setTxTypeFilter(e.target.value)}
+                className="h-11 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+              >
+                <option value="">Semua</option>
+                <option value="PAYMENT">PAYMENT</option>
+                <option value="ESCROW">ESCROW</option>
+                <option value="PAYOUT">PAYOUT</option>
+                <option value="REFUND">REFUND</option>
+              </select>
+            </div>
+            <div className="min-w-[140px]">
+              <Label>Status</Label>
+              <select
+                value={txStatusFilter}
+                onChange={(e) => setTxStatusFilter(e.target.value)}
+                className="h-11 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+              >
+                <option value="">Semua</option>
+                <option value="PENDING">PENDING</option>
+                <option value="ESCROW_HELD">ESCROW_HELD</option>
+                <option value="RELEASED">RELEASED</option>
+                <option value="REFUNDED">REFUNDED</option>
+                <option value="FAILED">FAILED</option>
+              </select>
             </div>
             <Button type="submit" size="sm">
               Terapkan

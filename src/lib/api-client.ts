@@ -123,8 +123,16 @@ async function executeRequest<T>(
   }
 
   if (response.status === 403 && auth) {
-    redirectToSignIn();
-    throw new ApiError(403, body.meta?.message ?? "Akses ditolak.");
+    const message = body.meta?.message ?? "Akses ditolak.";
+    const isAuthFailure =
+      message.toLowerCase().includes("token") ||
+      message.toLowerCase().includes("sesi") ||
+      message.toLowerCase().includes("unauthorized") ||
+      message.toLowerCase().includes("login");
+    if (isAuthFailure) {
+      redirectToSignIn();
+    }
+    throw new ApiError(403, message, body.data);
   }
 
   if (!response.ok || !body.meta?.success) {

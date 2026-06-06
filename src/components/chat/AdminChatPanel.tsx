@@ -8,6 +8,8 @@ import {
   sendAdminChatMessage,
 } from "@/lib/api/extended";
 import { formatIDR } from "@/lib/format";
+import { nativeInputClass, nativeSelectClass, textareaClass } from "@/lib/form-classes";
+import { brandLinkClass } from "@/lib/theme-classes";
 import type { ChatInboxItem, ChatMessageItem, ChatStats } from "@/types/extended";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -230,12 +232,12 @@ export default function AdminChatPanel() {
               placeholder="Cari produk, pembeli, supplier..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+              className={nativeInputClass}
             />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 w-full rounded-lg border border-gray-300 px-2 text-sm dark:border-gray-700 dark:bg-gray-900"
+              className={nativeSelectClass}
             >
               {NEGO_STATUSES.map((s) => (
                 <option key={s || "all"} value={s}>
@@ -243,7 +245,7 @@ export default function AdminChatPanel() {
                 </option>
               ))}
             </select>
-            <p className="text-[10px] text-gray-500">{inboxTotal} ruang negosiasi Anda</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">{inboxTotal} ruang negosiasi Anda</p>
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -254,7 +256,7 @@ export default function AdminChatPanel() {
                 ))}
               </div>
             ) : inbox.length === 0 ? (
-              <p className="p-6 text-center text-sm text-gray-500">
+              <p className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
                 Tidak ada negosiasi untuk akun ini. Login sebagai pembeli/supplier yang ikut nego
                 atau buka nego dari aplikasi mobile.
               </p>
@@ -284,7 +286,7 @@ export default function AdminChatPanel() {
                     <p className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400">
                       {previewText(item.lastMessage)}
                     </p>
-                    <p className="mt-1 text-[10px] text-gray-400">
+                    <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500">
                       {formatTime(item.updatedAt)} · {item._count.messages} pesan
                     </p>
                   </button>
@@ -297,7 +299,7 @@ export default function AdminChatPanel() {
         {/* Thread */}
         <section className="flex min-w-0 flex-1 flex-col">
           {!roomId ? (
-            <div className="flex flex-1 flex-col items-center justify-center text-center text-gray-500">
+            <div className="flex flex-1 flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400">
               <p className="text-sm font-medium">Pilih ruang negosiasi Anda</p>
               <p className="mt-1 text-xs">Hanya percakapan yang melibatkan akun login ini</p>
             </div>
@@ -321,20 +323,20 @@ export default function AdminChatPanel() {
                   <div className="mt-2 flex flex-wrap gap-3 text-xs">
                     <span>
                       Pembeli:{" "}
-                      <Link href={`/users/${threadMeta.buyer.id}`} className="text-brand-600 hover:underline">
+                      <Link href={`/users/${threadMeta.buyer.id}`} className={`${brandLinkClass} hover:underline`}>
                         {threadMeta.buyer.fullName}
                       </Link>
                     </span>
                     <span>
                       Supplier:{" "}
-                      <Link href={`/users/${threadMeta.seller.id}`} className="text-brand-600 hover:underline">
+                      <Link href={`/users/${threadMeta.seller.id}`} className={`${brandLinkClass} hover:underline`}>
                         {threadMeta.seller.fullName}
                       </Link>
                     </span>
                     {threadMeta.order && (
                       <Link
                         href={`/orders/${threadMeta.order.id}`}
-                        className="text-brand-600 hover:underline"
+                        className={`${brandLinkClass} hover:underline`}
                       >
                         Order {threadMeta.order.orderNumber}
                       </Link>
@@ -359,7 +361,7 @@ export default function AdminChatPanel() {
                 onSubmit={handleSend}
                 className="border-t border-gray-100 p-3 dark:border-gray-800"
               >
-                <p className="mb-2 text-[10px] text-gray-500">
+                <p className="mb-2 text-[10px] text-gray-500 dark:text-gray-400">
                   Pesan dikirim sebagai Anda (pembeli atau supplier) di ruang negosiasi ini
                 </p>
                 <div className="flex gap-2">
@@ -368,7 +370,7 @@ export default function AdminChatPanel() {
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder="Tulis pesan..."
                     rows={2}
-                    className="min-h-[44px] flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
+                    className={`min-h-[44px] flex-1 ${textareaClass}`}
                   />
                   <Button type="submit" size="sm" disabled={sending || !draft.trim()}>
                     {sending ? "…" : "Kirim"}
