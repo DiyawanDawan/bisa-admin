@@ -25,10 +25,14 @@ export default function VerifyLookupPage() {
         onSubmit={onSubmit}
         className="rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm"
       >
-        <label className="mb-2 block text-sm font-semibold text-[#334155]">
+        <label
+          htmlFor="orderNumber"
+          className="mb-2 block text-sm font-semibold text-[#334155]"
+        >
           Nomor pesanan / kontrak
         </label>
         <input
+          id="orderNumber"
           type="text"
           value={orderNumber}
           onChange={(e) => setOrderNumber(e.target.value)}

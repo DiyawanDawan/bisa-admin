@@ -13,6 +13,7 @@ import type {
   CrmOverview,
   CrmStage,
   AdminIotDeviceItem,
+  AdminIotProvisionResult,
   ForumCategoryOption,
   ForumPostAdmin,
   MarketTrendItem,
@@ -334,4 +335,12 @@ export async function fetchAdminIotDevices(params?: {
     items: res.data,
     total: res.pagination?.total ?? res.data.length,
   };
+}
+
+export async function createAdminIotDevice(payload: {
+  serialNumber: string;
+  name?: string;
+}): Promise<AdminIotProvisionResult> {
+  const res = await apiPost<AdminIotProvisionResult>("/admin/iot/devices", payload);
+  return res.data;
 }

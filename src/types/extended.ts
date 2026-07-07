@@ -287,13 +287,28 @@ export interface AdminIotDeviceItem {
   name: string;
   liveStatus: string;
   isMonitoringEnabled: boolean;
-  ownerName: string;
-  ownerEmail: string;
+  ownerName: string | null;
+  ownerEmail: string | null;
+  isClaimed: boolean;
+  ownedAt: string | null;
   lastTemp: number | null;
   lastSeen: string | null;
   hasUnreadAlert: boolean;
   thresholdMin: number | null;
   thresholdMax: number | null;
+}
+
+export interface AdminIotProvisionResult {
+  id: string;
+  serialNumber: string;
+  name: string | null;
+  deviceSecret: string;
+  qrPayload: {
+    serialNumber: string;
+    deviceSecret: string;
+  };
+  qrData: string;
+  createdAt: string;
 }
 
 export interface CrmContactDetail {

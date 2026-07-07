@@ -75,7 +75,8 @@ async function executeRequest<T>(
   };
 
   const hasBody = fetchOptions.body !== undefined && fetchOptions.body !== null;
-  if (hasBody && !headers["Content-Type"]) {
+  const isFormData = typeof FormData !== "undefined" && fetchOptions.body instanceof FormData;
+  if (hasBody && !isFormData && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -168,6 +169,18 @@ export async function apiPost<T>(
   return apiRequest<T>(path, {
     method: "POST",
     body: JSON.stringify(payload),
+    auth,
+  });
+}
+
+export async function apiPostForm<T>(
+  path: string,
+  formData: FormData,
+  auth = true,
+): Promise<ApiEnvelope<T>> {
+  return apiRequest<T>(path, {
+    method: "POST",
+    body: formData,
     auth,
   });
 }

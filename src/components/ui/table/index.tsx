@@ -25,6 +25,7 @@ interface TableCellProps {
   children?: ReactNode;
   isHeader?: boolean;
   className?: string;
+  colSpan?: number;
 }
 
 const Table: React.FC<TableProps> = ({ children, className }) => {
@@ -73,13 +74,16 @@ const TableCell: React.FC<TableCellProps> = ({
   children,
   isHeader = false,
   className,
+  colSpan,
 }) => {
   const CellTag = isHeader ? "th" : "td";
   const defaultClass = isHeader
     ? "px-4 py-3 text-left text-theme-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400"
     : "px-4 py-3 text-sm text-gray-700 dark:text-gray-300";
   return (
-    <CellTag className={twMerge(defaultClass, className)}>{children}</CellTag>
+    <CellTag className={twMerge(defaultClass, className)} colSpan={colSpan}>
+      {children}
+    </CellTag>
   );
 };
 

@@ -4,7 +4,7 @@ import { isAdminAccessToken } from "@/lib/jwt-payload";
 
 const TOKEN_COOKIE = "bisa_access_token";
 
-const PUBLIC_PATHS = ["/signin", "/signup", "/error-404"];
+const PUBLIC_PATHS = ["/signin", "/signup", "/error-404", "/verify", "/track"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some(
