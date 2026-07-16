@@ -61,9 +61,15 @@ export default function ResolveDisputeForm({
   if (!canResolve) {
     return (
       <div className="rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-200">
-        Selesaikan mediasi terlebih dahulu: mulai mediasi, kirim pesan sebagai
-        Hakim BISA, lalu klik <strong>Tandai siap putus</strong> sebelum release
-        atau refund.
+        <p className="font-semibold mb-2">Tombol penyelesaian belum tersedia</p>
+        <p className="mb-2">Untuk menyelesaikan sengketa, ikuti langkah berikut:</p>
+        <ol className="list-decimal ml-4 space-y-1">
+          <li>Scroll ke atas ke section <strong>Mediasi Chat (Hakim BISA)</strong></li>
+          <li>Klik <strong>Mulai Mediasi</strong> agar pembeli, penjual, dan admin masuk satu chat</li>
+          <li>Diskusikan dengan kedua pihak (chat otomatis tersinkron tiap beberapa detik)</li>
+          <li>Setelah selesai, klik <strong>Tandai Siap Putus</strong></li>
+          <li>Kembali ke section ini untuk memilih Release atau Refund</li>
+        </ol>
       </div>
     );
   }

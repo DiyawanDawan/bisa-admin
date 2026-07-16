@@ -296,6 +296,7 @@ export interface AdminIotDeviceItem {
   hasUnreadAlert: boolean;
   thresholdMin: number | null;
   thresholdMax: number | null;
+  deviceSecret: string;
 }
 
 export interface AdminIotProvisionResult {

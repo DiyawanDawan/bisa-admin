@@ -6,7 +6,7 @@ import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import Alert from "@/components/ui/alert/Alert";
 import { QRCodeSVG } from "qrcode.react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -14,11 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { createAdminIotDevice, fetchAdminIotDevices } from "@/lib/api/extended";
+import { 
+  createAdminIotDevice, 
+  fetchAdminIotDevices,
+  updateAdminIotDevice,
+  deleteAdminIotDevice 
+} from "@/lib/api/extended";
 import { ApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format";
 import type { AdminIotDeviceItem, AdminIotProvisionResult } from "@/types/extended";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 
 function liveBadgeColor(status: string): "success" | "warning" | "error" | "light" {
   if (status === "ONLINE") return "success";
@@ -37,6 +42,15 @@ export default function IotDevicesPanel() {
   const [serialNumber, setSerialNumber] = useState("");
   const [deviceName, setDeviceName] = useState("");
   const [provisioned, setProvisioned] = useState<AdminIotProvisionResult | null>(null);
+  
+  // Edit/Delete states
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [showSecret, setShowSecret] = useState<Record<string, boolean>>({});
+  
+  // Modal states
+  const [showSecretModal, setShowSecretModal] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<AdminIotDeviceItem | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,6 +116,108 @@ export default function IotDevicesPanel() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEdit = (device: AdminIotDeviceItem) => {
+    setEditingId(device.id);
+    setEditName(device.name || "");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditName("");
+  };
+
+  const handleSaveEdit = async (deviceId: string) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await updateAdminIotDevice(deviceId, {
+        name: editName.trim() || undefined,
+      });
+      await load();
+      handleCancelEdit();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Gagal update perangkat");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (deviceId: string, deviceName: string) => {
+    if (!confirm(`Hapus perangkat "${deviceName}"? Semua data sensor akan hilang!`)) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await deleteAdminIotDevice(deviceId);
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Gagal menghapus perangkat");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const toggleSecret = (deviceId: string) => {
+    setShowSecret(prev => ({ ...prev, [deviceId]: !prev[deviceId] }));
+  };
+
+  const handleShowSecretModal = (device: AdminIotDeviceItem) => {
+    setSelectedDevice(device);
+    setShowSecretModal(true);
+  };
+
+  const handleCloseSecretModal = () => {
+    setShowSecretModal(false);
+    setSelectedDevice(null);
+  };
+
+  const handleDownloadQr = () => {
+    if (!selectedDevice) return;
+    
+    // Build QR payload
+    const qrPayload = {
+      serialNumber: selectedDevice.deviceId,
+      deviceSecret: selectedDevice.deviceSecret,
+    };
+    
+    // Create canvas from QR code
+    const svg = document.getElementById('device-secret-qr');
+    if (!svg) return;
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `${selectedDevice.deviceId}-qr.png`;
+        a.click();
+        URL.revokeObjectURL(downloadUrl);
+      });
+      
+      URL.revokeObjectURL(url);
+    };
+    
+    img.src = url;
   };
 
   return (
@@ -194,21 +310,31 @@ export default function IotDevicesPanel() {
                   <TableCell isHeader>Suhu</TableCell>
                   <TableCell isHeader>Terakhir</TableCell>
                   <TableCell isHeader>Alert</TableCell>
+                  <TableCell isHeader>Actions</TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((d) => (
                   <TableRow key={d.id}>
                     <TableCell>
-                      <div className="font-medium text-gray-800 dark:text-white/90">
-                        {d.name}
-                      </div>
+                      {editingId === d.id ? (
+                        <Input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          placeholder="Nama perangkat"
+                          className="mb-2"
+                        />
+                      ) : (
+                        <div className="font-medium text-gray-800 dark:text-white/90">
+                          {d.name}
+                        </div>
+                      )}
                       <div className="text-xs text-gray-500">{d.deviceId}</div>
                     </TableCell>
                     <TableCell>
                       {d.ownerName ? (
                         <>
-                          <div>{d.ownerName}</div>
+                          <div className="font-medium">{d.ownerName}</div>
                           <div className="text-xs text-gray-500">{d.ownerEmail}</div>
                         </>
                       ) : (
@@ -229,7 +355,14 @@ export default function IotDevicesPanel() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {d.lastTemp != null ? `${d.lastTemp}°C` : "—"}
+                      <span className="font-semibold text-gray-800 dark:text-white/90">
+                        {d.lastTemp != null ? `${d.lastTemp}°C` : "—"}
+                      </span>
+                      {d.thresholdMin != null && d.thresholdMax != null && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Range: {d.thresholdMin}°C - {d.thresholdMax}°C
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       {d.lastSeen ? formatDate(d.lastSeen) : "—"}
@@ -243,6 +376,57 @@ export default function IotDevicesPanel() {
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {editingId === d.id ? (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveEdit(d.id)}
+                            disabled={submitting}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={handleCancelEdit}
+                            disabled={submitting}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleShowSecretModal(d)}
+                            disabled={submitting}
+                            className="rounded bg-blue-500 px-2 py-1 text-xs text-white hover:bg-blue-600 disabled:opacity-50"
+                            title="Show QR & Secret"
+                          >
+                            QR
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(d)}
+                            disabled={submitting}
+                            className="rounded bg-gray-500 px-2 py-1 text-xs text-white hover:bg-gray-600 disabled:opacity-50"
+                            title="Edit"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(d.id, d.name)}
+                            disabled={submitting}
+                            className="rounded bg-red-500 px-2 py-1 text-xs text-white hover:bg-red-600 disabled:opacity-50"
+                            title="Delete"
+                          >
+                            Del
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -254,6 +438,103 @@ export default function IotDevicesPanel() {
           Total {total} perangkat · Halaman {page}
         </p>
       </ComponentCard>
+
+      {/* Device Secret Modal */}
+      {showSecretModal && selectedDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={handleCloseSecretModal}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Modal content */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                Device Secret & QR Code
+              </h3>
+              
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {selectedDevice.name}
+                </p>
+                <p className="text-xs text-gray-500">{selectedDevice.deviceId}</p>
+              </div>
+
+              {/* QR Code */}
+              <div className="flex flex-col items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
+                <QRCodeSVG 
+                  id="device-secret-qr"
+                  value={JSON.stringify({
+                    serialNumber: selectedDevice.deviceId,
+                    deviceSecret: selectedDevice.deviceSecret,
+                  })} 
+                  size={220} 
+                  level="M" 
+                  includeMargin 
+                />
+                <p className="text-center text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Scan untuk re-provision atau backup
+                </p>
+              </div>
+
+              {/* Device Secret */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Device Secret (X-Device-Token)
+                </label>
+                <div className="rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
+                  <code className="block break-all text-xs text-gray-800 dark:text-gray-200">
+                    {selectedDevice.deviceSecret}
+                  </code>
+                </div>
+              </div>
+
+              {/* Owner Info */}
+              {selectedDevice.ownerName && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Owner
+                  </label>
+                  <div className="rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {selectedDevice.ownerName}
+                    </p>
+                    <p className="text-xs text-gray-500">{selectedDevice.ownerEmail}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleDownloadQr}
+                  className="flex-1"
+                >
+                  Download QR
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleCloseSecretModal}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

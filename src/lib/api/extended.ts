@@ -344,3 +344,17 @@ export async function createAdminIotDevice(payload: {
   const res = await apiPost<AdminIotProvisionResult>("/admin/iot/devices", payload);
   return res.data;
 }
+
+export async function updateAdminIotDevice(
+  deviceId: string,
+  payload: {
+    name?: string;
+  },
+): Promise<AdminIotDeviceItem> {
+  const res = await apiPatch<AdminIotDeviceItem>(`/admin/iot/devices/${deviceId}`, payload);
+  return res.data;
+}
+
+export async function deleteAdminIotDevice(deviceId: string): Promise<void> {
+  await apiDelete(`/admin/iot/devices/${deviceId}`);
+}

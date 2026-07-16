@@ -173,10 +173,23 @@ export default function DisputeDetailView({ orderId }: { orderId: string }) {
         title="Mediasi Chat (Hakim BISA)"
         desc="Diskusikan masalah dengan pembeli dan supplier sebelum putus release/refund"
       >
+        {!order.mediation?.mediationStartedAt && (
+          <div className="mb-4 rounded-lg border-2 border-warning-300 bg-warning-50 px-4 py-3 dark:border-warning-700 dark:bg-warning-900/20">
+            <p className="text-sm font-semibold text-warning-800 dark:text-warning-200 mb-2">
+              Mediasi belum dimulai!
+            </p>
+            <p className="text-sm text-warning-700 dark:text-warning-300 mb-3">
+              Anda harus membuka chat group mediasi untuk bernegosiasi dengan pembeli dan penjual sebelum bisa memutuskan sengketa.
+            </p>
+            <p className="text-sm text-warning-700 dark:text-warning-300 font-medium">
+              Klik tombol &quot;Mulai Mediasi&quot; di bawah ini
+            </p>
+          </div>
+        )}
         <DisputeMediationChat
           orderId={order.id}
           orderNumber={order.orderNumber}
-          canMediate={order.mediation?.canMediate ?? Boolean(order.negotiationId)}
+          canMediate={Boolean(order.dispute) && order.status === "DISPUTED"}
           initialMediation={order.mediation ?? undefined}
           onMediationChange={setMediation}
         />
