@@ -72,6 +72,40 @@ function statusBadgeColor(status: ProductStatus): "success" | "warning" | "error
   return "warning";
 }
 
+function GalleryImage({
+  src,
+  alt,
+  className = "",
+}: {
+  src: string | null | undefined;
+  alt: string;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const show = src && !failed;
+
+  if (!show) {
+    return (
+      <div
+        className={`flex items-center justify-center bg-gray-100 text-theme-xs text-gray-400 dark:bg-gray-800 ${className}`}
+      >
+        Tanpa gambar
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      className={`object-cover ${className}`}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export default function ProductsTable() {
   const [items, setItems] = useState<ProductListItem[]>([]);
   const [search, setSearch] = useState("");
@@ -316,11 +350,20 @@ export default function ProductsTable() {
                 items.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell className="px-5 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">
-                        {product.name}
-                      </div>
-                      <div className="text-theme-xs text-gray-400">
-                        {product.category?.name ?? "—"} · {formatDate(product.createdAt)}
+                      <div className="flex items-center gap-3">
+                        <GalleryImage
+                          src={product.thumbnailUrl ?? null}
+                          alt={product.name}
+                          className="h-12 w-12 rounded-lg border border-gray-200 dark:border-gray-800"
+                        />
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-gray-800 dark:text-white/90">
+                            {product.name}
+                          </div>
+                          <div className="truncate text-theme-xs text-gray-400">
+                            {product.category?.name ?? "—"} · {formatDate(product.createdAt)}
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="px-5 py-4 text-sm text-gray-600">
@@ -330,16 +373,37 @@ export default function ProductsTable() {
                       {formatIDR(product.pricePerUnit)}
                     </TableCell>
                     <TableCell className="px-5 py-4">
-                      <Badge color={statusBadgeColor(product.status)} size="sm">
-                        {STATUS_LABELS[product.status] ?? product.status}
-                      </Badge>
-                      {product.isCertified && (
-                        <span className="ml-1 inline-block">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge color={statusBadgeColor(product.status)} size="sm">
+                          {STATUS_LABELS[product.status] ?? product.status}
+                        </Badge>
+
+                        {product.isCertified ? (
                           <Badge color="primary" size="sm">
                             Certified
                           </Badge>
-                        </span>
-                      )}
+                        ) : null}
+
+                        {product.isIotMonitored ? (
+                          <Badge color="success" size="sm">
+                            IoT Monitored
+                          </Badge>
+                        ) : (
+                          <Badge color="light" size="sm">
+                            IoT Off
+                          </Badge>
+                        )}
+
+                        {product.isEscrowProtected ? (
+                          <Badge color="success" size="sm">
+                            Escrow Protected
+                          </Badge>
+                        ) : (
+                          <Badge color="warning" size="sm">
+                            Escrow Off
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="px-5 py-4 text-end">
                       <div className="flex flex-wrap justify-end gap-1">

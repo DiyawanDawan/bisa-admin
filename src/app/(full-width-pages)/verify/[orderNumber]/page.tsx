@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { fetchPublicApi } from "@/lib/public-api";
+import Badge from "@/components/ui/badge/Badge";
 
 type VerifyData = {
   orderNumber: string;
@@ -10,7 +11,16 @@ type VerifyData = {
   specifications?: unknown;
   verificationStatus: string;
   seller?: { fullName?: string };
-  items?: Array<{ product?: { name?: string; biomassaType?: string } }>;
+  items?: Array<{
+    product?: {
+      name?: string;
+      biomassaType?: string;
+      thumbnailUrl?: string | null;
+      isCertified?: boolean;
+      isIotMonitored?: boolean;
+      isEscrowProtected?: boolean;
+    };
+  }>;
 };
 
 export default async function VerifyOrderPage({
@@ -67,7 +77,48 @@ export default async function VerifyOrderPage({
               {data.items?.map((item, i) => (
                 <div key={i}>
                   <dt className="text-[#64748B]">Produk</dt>
-                  <dd className="font-semibold">{item.product?.name ?? "—"}</dd>
+                  <dd>
+                    <div className="flex items-start gap-3">
+                      {item.product?.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.product.thumbnailUrl}
+                          alt={item.product.name ?? "Produk"}
+                          className="mt-0.5 h-14 w-14 rounded-lg border border-gray-200 object-cover"
+                        />
+                      ) : (
+                        <div className="mt-0.5 flex h-14 w-14 items-center justify-center rounded-lg border border-gray-200 bg-white text-[11px] text-gray-500">
+                          Tanpa
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold">
+                          {item.product?.name ?? "—"}
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {item.product?.isCertified ? (
+                            <Badge color="primary" size="sm">
+                              Certified
+                            </Badge>
+                          ) : null}
+                          {item.product?.isIotMonitored ? (
+                            <Badge color="success" size="sm">
+                              IoT Monitored
+                            </Badge>
+                          ) : null}
+                          {item.product?.isEscrowProtected ? (
+                            <Badge color="success" size="sm">
+                              Escrow Protected
+                            </Badge>
+                          ) : (
+                            <Badge color="warning" size="sm">
+                              Escrow Off
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </dd>
                 </div>
               ))}
             </dl>

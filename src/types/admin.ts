@@ -281,8 +281,11 @@ export interface ProductListItem {
   name: string;
   status: ProductStatus;
   isCertified: boolean;
+  thumbnailUrl?: string | null;
   pricePerUnit: number;
   stock: number;
+  isIotMonitored: boolean;
+  isEscrowProtected: boolean;
   createdAt: string;
   user: { fullName: string; email: string };
   category?: { name: string } | null;
