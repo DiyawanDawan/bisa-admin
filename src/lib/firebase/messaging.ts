@@ -38,7 +38,7 @@ function attachForegroundListener(instance: Messaging) {
     const title = payload.notification?.title ?? "BISA Admin";
     const body = payload.notification?.body ?? "";
     if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-      new Notification(title, { body, icon: "/images/logo/logo-icon.svg" });
+      new Notification(title, { body, icon: "/images/logo/bisa-icon.png" });
     }
   });
 }
