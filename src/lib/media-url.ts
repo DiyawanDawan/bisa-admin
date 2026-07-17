@@ -9,10 +9,6 @@ function mediaBaseUrl(): string {
   return api.replace(/\/+$/, "").replace(/\/api\/v1$/i, "");
 }
 
-function useDirectCdn(base: string): boolean {
-  return base.toLowerCase().includes("cdn.");
-}
-
 const STORAGE_PREFIXES = [
   "products/",
   "avatars/",
@@ -57,9 +53,9 @@ export function resolveMediaUrl(path: string | null | undefined): string | null 
   const base = mediaBaseUrl();
   if (!base) return value;
 
-  const normalized = value.replace(/^\//, "");
-  if (useDirectCdn(base)) {
-    return `${base}/${normalized}`;
+  let normalized = value.replace(/^\//, "");
+  if (normalized.startsWith("api/v1/storage/assets/")) {
+    normalized = normalized.slice("api/v1/storage/assets/".length);
   }
-  return `${base}/api/v1/storage/assets/${normalized}`;
+  return `${base}/${normalized}`;
 }
