@@ -2,6 +2,7 @@
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import ComponentCard from "@/components/common/ComponentCard";
+import AdminMediaImage from "@/components/common/AdminMediaImage";
 import {
   Table,
   TableBody,
@@ -10,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchKYCQueue, reviewKYC } from "@/lib/api/admin";
+import { resolveMediaUrl } from "@/lib/media-url";
 import { formatDate } from "@/lib/format";
 import type { KYCQueueItem } from "@/types/admin";
 import Link from "next/link";
@@ -17,14 +19,22 @@ import { useCallback, useEffect, useState } from "react";
 
 function DocLink({ href, label }: { href?: string | null; label: string }) {
   if (!href) return null;
+  const url = resolveMediaUrl(href) ?? href;
   return (
     <a
-      href={href}
+      href={url}
       target="_blank"
       rel="noreferrer"
-      className="text-theme-xs text-brand-600 hover:underline dark:text-brand-400"
+      className="group flex flex-col items-center gap-1"
     >
-      {label}
+      <AdminMediaImage
+        src={href}
+        alt={label}
+        className="h-14 w-12 rounded border border-gray-200 transition group-hover:border-brand-400 dark:border-gray-700"
+      />
+      <span className="text-theme-xs text-brand-600 group-hover:underline dark:text-brand-400">
+        {label}
+      </span>
     </a>
   );
 }

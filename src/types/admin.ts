@@ -52,6 +52,7 @@ export interface UserListItem {
   createdAt: string;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  avatarUrl?: string | null;
 }
 
 export interface PayoutAccountItem {

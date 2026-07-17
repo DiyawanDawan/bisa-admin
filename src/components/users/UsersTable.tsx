@@ -1,6 +1,7 @@
 "use client";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
+import UserAvatar from "@/components/common/UserAvatar";
 import {
   Table,
   TableBody,
@@ -194,7 +195,7 @@ export default function UsersTable({
             <TableHeader className="border-b border-gray-100 dark:border-gray-800">
               <TableRow>
                 <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">
-                  Nama
+                  Pengguna
                 </TableCell>
                 <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">
                   Email
@@ -216,8 +217,13 @@ export default function UsersTable({
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
               {items.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="px-5 py-4 text-sm font-medium text-gray-800 dark:text-white/90">
-                    {user.fullName}
+                  <TableCell className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <UserAvatar src={user.avatarUrl} name={user.fullName} />
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                        {user.fullName}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
                     {user.email}

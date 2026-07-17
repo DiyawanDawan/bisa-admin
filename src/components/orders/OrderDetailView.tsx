@@ -1,5 +1,6 @@
 "use client";
 import ComponentCard from "@/components/common/ComponentCard";
+import AdminMediaImage from "@/components/common/AdminMediaImage";
 import Badge from "@/components/ui/badge/Badge";
 import { fetchAdminOrderDetail } from "@/lib/api/extended";
 import { formatDate, formatIDR } from "@/lib/format";
@@ -78,9 +79,19 @@ export default function OrderDetailView({ orderId }: { orderId: string }) {
         <ComponentCard title="Item order">
           <ul className="space-y-2 text-sm">
             {items.map((item, i) => (
-              <li key={i} className="flex justify-between border-b border-gray-100 py-2 dark:border-gray-800">
-                <span>{item.product.name}</span>
-                <span>
+              <li
+                key={i}
+                className="flex items-center justify-between gap-3 border-b border-gray-100 py-2 dark:border-gray-800"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <AdminMediaImage
+                    src={item.product.thumbnailUrl}
+                    alt={item.product.name}
+                    className="h-10 w-10 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700"
+                  />
+                  <span className="truncate">{item.product.name}</span>
+                </div>
+                <span className="shrink-0">
                   {Number(item.quantity)} × {formatIDR(Number(item.pricePerUnit))}
                 </span>
               </li>

@@ -1,7 +1,10 @@
 "use client";
 import ComponentCard from "@/components/common/ComponentCard";
+import AdminMediaImage from "@/components/common/AdminMediaImage";
+import UserAvatar from "@/components/common/UserAvatar";
 import Badge from "@/components/ui/badge/Badge";
 import { fetchUserDossier } from "@/lib/api/admin";
+import { resolveMediaUrl } from "@/lib/media-url";
 import { formatDate, formatIDR } from "@/lib/format";
 import type { RoleReadinessSummary, UserDossier } from "@/types/admin";
 import Link from "next/link";
@@ -42,6 +45,11 @@ export default function UserDossierView({ userId }: { userId: string }) {
         <Link href="/users" className="text-sm text-brand-600 hover:underline">
           ← Daftar pengguna
         </Link>
+        <UserAvatar
+          src={user.avatarUrl}
+          name={user.fullName}
+          className="h-14 w-14 text-sm"
+        />
         <p className="text-xl font-semibold text-gray-800 dark:text-white/90">
           {user.fullName}
         </p>
@@ -159,26 +167,18 @@ export default function UserDossierView({ userId }: { userId: string }) {
                 <dt className="text-gray-500">Status</dt>
                 <dd>{String(user.verification.verificationStatus ?? "—")}</dd>
               </div>
-              <div className="flex flex-wrap gap-3 pt-1">
+              <div className="flex flex-wrap gap-4 pt-2">
                 {user.verification.ktpUrl ? (
-                  <a
+                  <DocPreview
                     href={String(user.verification.ktpUrl)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-brand-600 hover:underline dark:text-brand-400"
-                  >
-                    KTP
-                  </a>
+                    label="KTP"
+                  />
                 ) : null}
                 {user.verification.selfieUrl ? (
-                  <a
+                  <DocPreview
                     href={String(user.verification.selfieUrl)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-brand-600 hover:underline dark:text-brand-400"
-                  >
-                    Selfie
-                  </a>
+                    label="Selfie"
+                  />
                 ) : null}
               </div>
             </dl>
@@ -223,6 +223,27 @@ export default function UserDossierView({ userId }: { userId: string }) {
         )}
       </div>
     </div>
+  );
+}
+
+function DocPreview({ href, label }: { href: string; label: string }) {
+  const url = resolveMediaUrl(href) ?? href;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="group flex flex-col items-center gap-1.5"
+    >
+      <AdminMediaImage
+        src={href}
+        alt={label}
+        className="h-24 w-20 rounded-lg border border-gray-200 transition group-hover:border-brand-400 dark:border-gray-700"
+      />
+      <span className="text-theme-xs text-brand-600 group-hover:underline dark:text-brand-400">
+        {label}
+      </span>
+    </a>
   );
 }
 

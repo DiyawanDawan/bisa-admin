@@ -1,9 +1,11 @@
 "use client";
 import Badge from "@/components/ui/badge/Badge";
 import ComponentCard from "@/components/common/ComponentCard";
+import AdminMediaImage from "@/components/common/AdminMediaImage";
 import DisputeMediationChat from "@/components/disputes/DisputeMediationChat";
 import ResolveDisputeForm from "@/components/disputes/ResolveDisputeForm";
 import { fetchDisputeDetail } from "@/lib/api/admin";
+import { resolveMediaUrl } from "@/lib/media-url";
 import { formatDate, formatIDR } from "@/lib/format";
 import type { DisputeMediationMeta, DisputeOrder } from "@/types/admin";
 import Link from "next/link";
@@ -129,17 +131,9 @@ export default function DisputeDetailView({ orderId }: { orderId: string }) {
               {evidence.length > 0 && (
                 <div>
                   <dt className="mb-2 text-gray-500">Bukti pembeli</dt>
-                  <dd className="flex flex-wrap gap-2">
-                    {evidence.map((url) => (
-                      <a
-                        key={url}
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-brand-600 underline text-theme-xs"
-                      >
-                        Lihat bukti
-                      </a>
+                  <dd className="flex flex-wrap gap-3">
+                    {evidence.map((url, index) => (
+                      <EvidenceThumb key={`${url}-${index}`} url={url} label={`Bukti ${index + 1}`} />
                     ))}
                   </dd>
                 </div>
@@ -147,17 +141,13 @@ export default function DisputeDetailView({ orderId }: { orderId: string }) {
               {sellerEvidence.length > 0 && (
                 <div>
                   <dt className="mb-2 text-gray-500">Bukti penjual</dt>
-                  <dd className="flex flex-wrap gap-2">
-                    {sellerEvidence.map((url) => (
-                      <a
-                        key={url}
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-brand-600 underline text-theme-xs"
-                      >
-                        Lihat bukti
-                      </a>
+                  <dd className="flex flex-wrap gap-3">
+                    {sellerEvidence.map((url, index) => (
+                      <EvidenceThumb
+                        key={`${url}-${index}`}
+                        url={url}
+                        label={`Bukti penjual ${index + 1}`}
+                      />
                     ))}
                   </dd>
                 </div>
@@ -206,5 +196,26 @@ export default function DisputeDetailView({ orderId }: { orderId: string }) {
         />
       </ComponentCard>
     </div>
+  );
+}
+
+function EvidenceThumb({ url, label }: { url: string; label: string }) {
+  const href = resolveMediaUrl(url) ?? url;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="group flex flex-col items-center gap-1"
+    >
+      <AdminMediaImage
+        src={url}
+        alt={label}
+        className="h-20 w-20 rounded-lg border border-gray-200 transition group-hover:border-brand-400 dark:border-gray-700"
+      />
+      <span className="text-theme-xs text-brand-600 group-hover:underline dark:text-brand-400">
+        {label}
+      </span>
+    </a>
   );
 }

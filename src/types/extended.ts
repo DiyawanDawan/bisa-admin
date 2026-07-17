@@ -76,7 +76,7 @@ export interface AdminOrderDetail {
   items: Array<{
     quantity: number | string;
     pricePerUnit: number | string;
-    product: { name: string };
+    product: { name: string; thumbnailUrl?: string | null };
   }>;
   dispute?: { id: string; status: string } | null;
   orderShipping?: AdminOrderShippingInfo | null;

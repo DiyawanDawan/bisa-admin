@@ -252,6 +252,7 @@ export async function fetchUserDossier(
     createdAt: profile.createdAt,
     isEmailVerified: profile.isEmailVerified,
     isPhoneVerified: profile.isPhoneVerified,
+    avatarUrl: profile.avatarUrl ?? null,
     profile: profile.profile,
     wallet: profile.wallet ?? null,
     payoutAccounts: (profile.payoutAccounts ?? []).map((acc: PayoutRow) => ({
