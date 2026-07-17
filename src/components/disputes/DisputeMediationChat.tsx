@@ -268,7 +268,7 @@ export default function DisputeMediationChat({
       <div className="flex flex-wrap gap-2">
         {!mediation?.mediationStartedAt ? (
           <Button
-            size="lg"
+            size="md"
             onClick={handleStartMediation}
             disabled={actionLoading || loading}
             className="bg-warning-500 hover:bg-warning-600 text-white font-semibold"
