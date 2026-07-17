@@ -1,5 +1,6 @@
 "use client";
 import { isAdminSessionValid } from "@/lib/session";
+import FcmRegistration from "@/components/notifications/FcmRegistration";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -24,5 +25,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <FcmRegistration />
+      {children}
+    </>
+  );
 }

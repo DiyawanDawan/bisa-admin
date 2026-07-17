@@ -502,3 +502,11 @@ export async function sendBroadcast(payload: BroadcastPayload): Promise<Broadcas
   const res = await apiPost<BroadcastResult>("/admin/notifications/broadcast", payload);
   return res.data;
 }
+
+/** Register browser FCM token for push notifications (admin session). */
+export async function registerFcmToken(fcmToken: string): Promise<void> {
+  await apiPost<{ id: string }>("/notifications/tokens", {
+    fcmToken,
+    platform: "WEB",
+  });
+}
