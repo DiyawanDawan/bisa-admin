@@ -89,6 +89,11 @@ const navItems: NavItem[] = [
     path: "/chat",
   },
   {
+    icon: <ChatIcon />,
+    name: "Customer Service",
+    path: "/support",
+  },
+  {
     icon: <PageIcon />,
     name: "Forum",
     path: "/forum",
