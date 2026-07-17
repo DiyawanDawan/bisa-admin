@@ -8,6 +8,7 @@ import Badge from "@/components/ui/badge/Badge";
 import Alert from "@/components/ui/alert/Alert";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
+import { resolveMediaUrl } from "@/lib/media-url";
 import {
   Table,
   TableBody,
@@ -352,7 +353,7 @@ export default function ProductsTable() {
                     <TableCell className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <GalleryImage
-                          src={product.thumbnailUrl ?? null}
+                          src={resolveMediaUrl(product.thumbnailUrl)}
                           alt={product.name}
                           className="h-12 w-12 rounded-lg border border-gray-200 dark:border-gray-800"
                         />

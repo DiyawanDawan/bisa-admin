@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { fetchPublicApi } from "@/lib/public-api";
+import { resolveMediaUrl } from "@/lib/media-url";
 import Badge from "@/components/ui/badge/Badge";
 
 type VerifyData = {
@@ -82,7 +83,7 @@ export default async function VerifyOrderPage({
                       {item.product?.thumbnailUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={item.product.thumbnailUrl}
+                          src={resolveMediaUrl(item.product.thumbnailUrl) ?? undefined}
                           alt={item.product.name ?? "Produk"}
                           className="mt-0.5 h-14 w-14 rounded-lg border border-gray-200 object-cover"
                         />

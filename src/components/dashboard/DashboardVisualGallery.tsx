@@ -2,6 +2,7 @@
 import ComponentCard from "@/components/common/ComponentCard";
 import Badge from "@/components/ui/badge/Badge";
 import { brandLinkClass, mutedTextClass } from "@/lib/theme-classes";
+import { resolveMediaUrl } from "@/lib/media-url";
 import type { DashboardVisualGallery } from "@/types/admin";
 import Link from "next/link";
 import { useState } from "react";
@@ -16,7 +17,8 @@ function GalleryImage({
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const show = src && !failed;
+  const resolved = resolveMediaUrl(src);
+  const show = resolved && !failed;
 
   if (!show) {
     return (
@@ -31,7 +33,7 @@ function GalleryImage({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      src={resolved}
       alt={alt}
       className={`object-cover ${className}`}
       loading="lazy"
