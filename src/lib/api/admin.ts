@@ -510,3 +510,11 @@ export async function registerFcmToken(fcmToken: string): Promise<void> {
     platform: "WEB",
   });
 }
+
+/** Deregister FCM token on admin logout. */
+export async function deregisterFcmToken(fcmToken: string): Promise<void> {
+  await apiRequest("/notifications/tokens", {
+    method: "DELETE",
+    body: JSON.stringify({ fcmToken }),
+  });
+}

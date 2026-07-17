@@ -47,8 +47,24 @@ export function updateTokens(accessToken: string, refreshToken: string): void {
   document.cookie = `${ACCESS_TOKEN_KEY}=${accessToken}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
 }
 
-export function clearSession(): void {
+export async function clearSession(): Promise<void> {
   if (typeof window === "undefined") return;
+
+  try {
+    const { getToken } = await import("firebase/messaging");
+    const { getApps } = await import("firebase/app");
+    const { getMessaging, isSupported } = await import("firebase/messaging");
+    if (getApps().length > 0 && (await isSupported())) {
+      const token = await getToken(getMessaging()).catch(() => null);
+      if (token) {
+        const { deregisterFcmToken } = await import("@/lib/api/admin");
+        await deregisterFcmToken(token).catch(() => {});
+      }
+    }
+  } catch {
+    // Firebase not available — skip deregister
+  }
+
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
