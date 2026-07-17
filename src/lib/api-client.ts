@@ -3,6 +3,7 @@ import {
   clearSession,
   getAccessToken,
 } from "@/lib/session";
+import { withAdminGetCache } from "@/lib/api-cache";
 
 export class ApiError extends Error {
   status: number;
@@ -158,7 +159,9 @@ export async function apiGet<T>(
   path: string,
   auth = true,
 ): Promise<ApiEnvelope<T>> {
-  return apiRequest<T>(path, { method: "GET", auth });
+  return withAdminGetCache(path, () =>
+    apiRequest<T>(path, { method: "GET", auth }),
+  );
 }
 
 export async function apiPost<T>(

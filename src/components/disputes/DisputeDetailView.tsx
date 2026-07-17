@@ -64,6 +64,7 @@ export default function DisputeDetailView({ orderId }: { orderId: string }) {
   const evidence = (dispute?.evidenceUrls as string[] | undefined) ?? [];
   const sellerEvidence =
     (dispute?.sellerEvidenceUrls as string[] | undefined) ?? [];
+  const orderItems = order.items ?? [];
 
   return (
     <div className="space-y-6">
@@ -85,17 +86,89 @@ export default function DisputeDetailView({ orderId }: { orderId: string }) {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ComponentCard title="Informasi Order" desc="Ringkasan transaksi">
-          <dl className="grid grid-cols-1 gap-3 text-sm">
+          <dl className="grid grid-cols-1 gap-4 text-sm">
             <div>
-              <dt className="text-gray-500">Pembeli</dt>
-              <dd className="font-medium text-gray-800 dark:text-white/90">
-                {order.buyer.fullName} ({order.buyer.email})
+              <dt className="mb-2 text-gray-500">Pembeli</dt>
+              <dd className="flex items-center gap-3 font-medium text-gray-800 dark:text-white/90">
+                <AdminMediaImage
+                  src={order.buyer.avatarUrl}
+                  alt={order.buyer.fullName}
+                  className="h-11 w-11 shrink-0 rounded-full border border-gray-200 dark:border-gray-700"
+                  fallback={
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-light-100 text-sm font-semibold text-blue-light-700 dark:bg-blue-light-500/20 dark:text-blue-light-300">
+                      {order.buyer.fullName.charAt(0).toUpperCase()}
+                    </span>
+                  }
+                />
+                <div className="min-w-0">
+                  <p className="truncate">{order.buyer.fullName}</p>
+                  {order.buyer.email ? (
+                    <p className="truncate text-theme-xs font-normal text-gray-500">
+                      {order.buyer.email}
+                    </p>
+                  ) : null}
+                </div>
               </dd>
             </div>
             <div>
-              <dt className="text-gray-500">Penjual</dt>
-              <dd className="font-medium text-gray-800 dark:text-white/90">
-                {order.seller.fullName} ({order.seller.email})
+              <dt className="mb-2 text-gray-500">Penjual / Supplier</dt>
+              <dd className="flex items-center gap-3 font-medium text-gray-800 dark:text-white/90">
+                <AdminMediaImage
+                  src={order.seller.avatarUrl}
+                  alt={order.seller.fullName}
+                  className="h-11 w-11 shrink-0 rounded-full border border-gray-200 dark:border-gray-700"
+                  fallback={
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-success-100 text-sm font-semibold text-success-700 dark:bg-success-500/20 dark:text-success-300">
+                      {order.seller.fullName.charAt(0).toUpperCase()}
+                    </span>
+                  }
+                />
+                <div className="min-w-0">
+                  <p className="truncate">{order.seller.fullName}</p>
+                  {order.seller.email ? (
+                    <p className="truncate text-theme-xs font-normal text-gray-500">
+                      {order.seller.email}
+                    </p>
+                  ) : null}
+                </div>
+              </dd>
+            </div>
+            <div>
+              <dt className="mb-2 text-gray-500">Produk order</dt>
+              <dd>
+                {orderItems.length === 0 ? (
+                  <p className="text-gray-500">Tidak ada item.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {orderItems.map((item) => (
+                      <li
+                        key={item.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 p-2 dark:border-gray-800"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <AdminMediaImage
+                            src={item.product?.thumbnailUrl}
+                            alt={item.product?.name ?? "Produk"}
+                            className="h-12 w-12 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700"
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-gray-800 dark:text-white/90">
+                              {item.product?.name ?? "—"}
+                            </p>
+                            <p className="text-theme-xs text-gray-500">
+                              {Number(item.quantity)}
+                              {item.product?.unit ? ` ${item.product.unit}` : ""}{" "}
+                              × {formatIDR(Number(item.pricePerUnit))}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="shrink-0 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                          {formatIDR(Number(item.subtotal))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </dd>
             </div>
             <div>
@@ -179,7 +252,7 @@ export default function DisputeDetailView({ orderId }: { orderId: string }) {
         <DisputeMediationChat
           orderId={order.id}
           orderNumber={order.orderNumber}
-          canMediate={Boolean(order.dispute) && order.status === "DISPUTED"}
+          canMediate={order.status === "DISPUTED"}
           initialMediation={order.mediation ?? undefined}
           onMediationChange={setMediation}
         />

@@ -1,5 +1,6 @@
 "use client";
 import Badge from "@/components/ui/badge/Badge";
+import AdminMediaImage from "@/components/common/AdminMediaImage";
 import {
   Table,
   TableBody,
@@ -40,6 +41,10 @@ function statusBadge(status: string) {
         </Badge>
       );
   }
+}
+
+function primaryProduct(order: DisputeOrder) {
+  return order.items?.[0]?.product ?? null;
 }
 
 export default function DisputesTable() {
@@ -129,6 +134,9 @@ export default function DisputesTable() {
                 Order
               </TableCell>
               <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                Produk
+              </TableCell>
+              <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                 Pembeli / Penjual
               </TableCell>
               <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
@@ -149,7 +157,7 @@ export default function DisputesTable() {
             {loading &&
               Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 6 }).map((__, j) => (
+                  {Array.from({ length: 7 }).map((__, j) => (
                     <TableCell key={j} className="px-5 py-4">
                       <div className="h-4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
                     </TableCell>
@@ -158,65 +166,106 @@ export default function DisputesTable() {
               ))}
             {!loading && items.length === 0 && (
               <TableRow>
-                <TableCell className="px-5 py-10 text-center text-sm text-gray-500">
+                <TableCell
+                  className="px-5 py-10 text-center text-sm text-gray-500"
+                  colSpan={7}
+                >
                   Tidak ada sengketa.
                 </TableCell>
-                <TableCell className="px-5 py-4" />
-                <TableCell className="px-5 py-4" />
-                <TableCell className="px-5 py-4" />
-                <TableCell className="px-5 py-4" />
-                <TableCell className="px-5 py-4" />
               </TableRow>
             )}
             {!loading &&
-              items.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="px-5 py-4 text-sm font-medium text-gray-800 dark:text-white/90">
-                    {order.orderNumber}
-                  </TableCell>
-                  <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    <div>{order.buyer.fullName}</div>
-                    <div className="text-theme-xs text-gray-400">{order.seller.fullName}</div>
-                  </TableCell>
-                  <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                    {formatIDR(Number(order.totalAmount))}
-                  </TableCell>
-                  <TableCell className="px-5 py-4">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex flex-wrap gap-1">
-                        {statusBadge(order.status)}
+              items.map((order) => {
+                const product = primaryProduct(order);
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell className="px-5 py-4 text-sm font-medium text-gray-800 dark:text-white/90">
+                      {order.orderNumber}
+                    </TableCell>
+                    <TableCell className="px-5 py-4">
+                      <div className="flex max-w-[220px] items-center gap-3">
+                        <AdminMediaImage
+                          src={product?.thumbnailUrl}
+                          alt={product?.name ?? "Produk"}
+                          className="h-11 w-11 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700"
+                        />
+                        <span className="line-clamp-2 text-sm font-medium text-gray-800 dark:text-white/90">
+                          {product?.name ?? "—"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <AdminMediaImage
+                            src={order.buyer.avatarUrl}
+                            alt={order.buyer.fullName}
+                            className="h-8 w-8 shrink-0 rounded-full border border-gray-200 dark:border-gray-700"
+                            fallback={
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-light-100 text-theme-xs font-semibold text-blue-light-700 dark:bg-blue-light-500/20 dark:text-blue-light-300">
+                                {order.buyer.fullName.charAt(0).toUpperCase()}
+                              </span>
+                            }
+                          />
+                          <span className="min-w-0 truncate">{order.buyer.fullName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <AdminMediaImage
+                            src={order.seller.avatarUrl}
+                            alt={order.seller.fullName}
+                            className="h-8 w-8 shrink-0 rounded-full border border-gray-200 dark:border-gray-700"
+                            fallback={
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success-100 text-theme-xs font-semibold text-success-700 dark:bg-success-500/20 dark:text-success-300">
+                                {order.seller.fullName.charAt(0).toUpperCase()}
+                              </span>
+                            }
+                          />
+                          <span className="min-w-0 truncate text-theme-xs text-gray-400">
+                            {order.seller.fullName}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      {formatIDR(Number(order.totalAmount))}
+                    </TableCell>
+                    <TableCell className="px-5 py-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-wrap gap-1">
+                          {statusBadge(order.status)}
+                          {order.mediation?.mediationStartedAt ? (
+                            <Badge color="warning" size="sm">
+                              Mediasi
+                            </Badge>
+                          ) : null}
+                          {order.mediation?.readyToResolveAt ? (
+                            <Badge color="success" size="sm">
+                              Siap putus
+                            </Badge>
+                          ) : null}
+                        </div>
                         {order.mediation?.mediationStartedAt ? (
-                          <Badge color="warning" size="sm">
-                            Mediasi
-                          </Badge>
-                        ) : null}
-                        {order.mediation?.readyToResolveAt ? (
-                          <Badge color="success" size="sm">
-                            Siap putus
-                          </Badge>
+                          <span className="text-theme-xs text-gray-400">
+                            {order.mediation.adminMessageCount} pesan admin
+                            {order.mediation.canResolve ? " · siap putus" : ""}
+                          </span>
                         ) : null}
                       </div>
-                      {order.mediation?.mediationStartedAt ? (
-                        <span className="text-theme-xs text-gray-400">
-                          {order.mediation.adminMessageCount} pesan admin
-                          {order.mediation.canResolve ? " · siap putus" : ""}
-                        </span>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-5 py-4 text-sm text-gray-500">
-                    {formatDate(order.updatedAt)}
-                  </TableCell>
-                  <TableCell className="px-5 py-4 text-end">
-                    <Link
-                      href={`/disputes/${order.id}`}
-                      className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
-                    >
-                      Detail
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell className="px-5 py-4 text-sm text-gray-500">
+                      {formatDate(order.updatedAt)}
+                    </TableCell>
+                    <TableCell className="px-5 py-4 text-end">
+                      <Link
+                        href={`/disputes/${order.id}`}
+                        className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                      >
+                        Detail
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
           </TableBody>
         </Table>
       </div>

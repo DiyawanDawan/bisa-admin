@@ -18,7 +18,7 @@ import type {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const ADMIN_PREFIX = "[Admin BISA]";
-const POLL_MS = 4000;
+const POLL_MS = 8000;
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -204,8 +204,8 @@ export default function DisputeMediationChat({
       <div className="rounded-lg border-2 border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-400">
         <p className="font-semibold mb-2">Mediasi tidak dapat dimulai</p>
         <p>
-          Order belum punya data sengketa atau ruang chat. Pastikan buyer sudah
-          mengajukan dispute.
+          Order ini belum berstatus DISPUTED. Mediasi hanya tersedia setelah
+          pembeli mengajukan sengketa.
         </p>
       </div>
     );

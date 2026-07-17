@@ -193,8 +193,18 @@ export interface DisputeOrder {
   totalQuantity: number;
   createdAt: string;
   updatedAt: string;
-  buyer: { fullName: string; email?: string; phone?: string };
-  seller: { fullName: string; email?: string; phone?: string };
+  buyer: {
+    fullName: string;
+    email?: string;
+    phone?: string;
+    avatarUrl?: string | null;
+  };
+  seller: {
+    fullName: string;
+    email?: string;
+    phone?: string;
+    avatarUrl?: string | null;
+  };
   dispute?: OrderDispute | null;
   negotiationId?: string | null;
   mediation?: DisputeMediationMeta;
@@ -203,7 +213,12 @@ export interface DisputeOrder {
     quantity: number;
     pricePerUnit: number;
     subtotal: number;
-    product?: { name: string };
+    product?: {
+      id?: string;
+      name: string;
+      thumbnailUrl?: string | null;
+      unit?: string | null;
+    } | null;
   }>;
   transaction?: { status: string; amount: number } | null;
 }
