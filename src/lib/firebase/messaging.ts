@@ -8,7 +8,7 @@ import {
   onMessage,
   type Messaging,
 } from "firebase/messaging";
-import { firebaseVapidKey, firebaseWebConfig } from "@/lib/firebase/config";
+import { firebaseVapidKey, firebaseWebConfig, isFirebaseConfigured } from "@/lib/firebase/config";
 import { registerFcmToken } from "@/lib/api/admin";
 
 let app: FirebaseApp | null = null;
@@ -48,9 +48,9 @@ function attachForegroundListener(instance: Messaging) {
  */
 export async function registerAdminFcmDevice(): Promise<void> {
   if (typeof window === "undefined") return;
-  if (!firebaseVapidKey) {
+  if (!isFirebaseConfigured()) {
     console.warn(
-      "[FCM] NEXT_PUBLIC_FIREBASE_VAPID_KEY belum diset — skip register token admin.",
+      "[FCM] NEXT_PUBLIC_FIREBASE_* / VAPID_KEY belum diset — skip register token admin.",
     );
     return;
   }

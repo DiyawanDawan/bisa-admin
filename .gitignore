@@ -27,7 +27,11 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
+
+# Firebase generated service worker (contains project config from env)
+/public/firebase-messaging-sw.js
 
 # vercel
 .vercel

@@ -3,8 +3,11 @@
   "version": "2.3.0",
   "private": true,
   "scripts": {
+    "generate:firebase-sw": "node scripts/generate-firebase-sw.mjs",
+    "predev": "node scripts/generate-firebase-sw.mjs",
     "dev": "next dev -p 3001",
     "dev:webpack": "next dev -p 3001 --webpack",
+    "prebuild": "node scripts/generate-firebase-sw.mjs",
     "build": "next build",
     "build:webpack": "next build --webpack",
     "start": "next start -p 3001",
