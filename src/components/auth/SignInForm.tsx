@@ -119,7 +119,8 @@ export default function SignInForm() {
                 </div>
               </div>
 
-              {process.env.NODE_ENV !== "production" && (
+              {(process.env.NODE_ENV !== "production" ||
+                process.env.NEXT_PUBLIC_SHOW_DEMO_LOGIN === "true") && (
                 <Button
                   type="button"
                   variant="outline"
