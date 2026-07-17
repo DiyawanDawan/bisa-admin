@@ -388,7 +388,7 @@ export default function IotDevicesPanel() {
                           </Button>
                           <Button
                             size="sm"
-                            variant="secondary"
+                            variant="outline"
                             onClick={handleCancelEdit}
                             disabled={submitting}
                           >
@@ -524,7 +524,7 @@ export default function IotDevicesPanel() {
                 <Button
                   type="button"
                   size="sm"
-                  variant="secondary"
+                  variant="outline"
                   onClick={handleCloseSecretModal}
                   className="flex-1"
                 >

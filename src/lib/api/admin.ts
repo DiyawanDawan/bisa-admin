@@ -33,7 +33,7 @@ import type {
   UserStatus,
   VerificationStatus,
 } from "@/types/admin";
-import { apiDownload, apiGet, apiPatch, apiPost, apiPut } from "@/lib/api-client";
+import { apiDownload, apiGet, apiPatch, apiPost, apiPut, apiRequest } from "@/lib/api-client";
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const res = await apiGet<DashboardStats>("/admin/dashboard/stats");
