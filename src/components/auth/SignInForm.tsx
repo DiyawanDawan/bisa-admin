@@ -119,19 +119,16 @@ export default function SignInForm() {
                 </div>
               </div>
 
-              {(process.env.NODE_ENV !== "production" ||
-                process.env.NEXT_PUBLIC_SHOW_DEMO_LOGIN === "true") && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  size="sm"
-                  disabled={loading}
-                  onClick={fillDemoCredentials}
-                >
-                  Isi demo admin
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                size="sm"
+                disabled={loading}
+                onClick={fillDemoCredentials}
+              >
+                Isi demo admin
+              </Button>
 
               <div>
                 <Button
