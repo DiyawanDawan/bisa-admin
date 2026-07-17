@@ -1,10 +1,11 @@
-import type { NextConfig } from "next";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const projectRoot = path.resolve(__dirname);
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const tailwindCss = path.join(projectRoot, "node_modules/tailwindcss");
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   outputFileTracingRoot: projectRoot,
 
   webpack(config) {
@@ -14,7 +15,9 @@ const nextConfig: NextConfig = {
     };
     config.resolve.modules = [
       path.join(projectRoot, "node_modules"),
-      ...(Array.isArray(config.resolve.modules) ? config.resolve.modules : ["node_modules"]),
+      ...(Array.isArray(config.resolve.modules)
+        ? config.resolve.modules
+        : ["node_modules"]),
     ];
 
     config.module.rules.push({

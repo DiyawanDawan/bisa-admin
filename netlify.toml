@@ -1,0 +1,12 @@
+# Netlify: jika NODE_ENV=production saat install, npm melewatkan devDependencies
+# (termasuk typescript yang dibutuhkan next build / next.config).
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--include=dev"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
