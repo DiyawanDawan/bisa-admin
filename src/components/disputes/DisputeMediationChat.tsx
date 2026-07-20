@@ -1,6 +1,7 @@
 "use client";
 import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
+import PartyAvatar from "@/components/common/PartyAvatar";
 import {
   fetchDisputeChat,
   markDisputeReadyToResolve,
@@ -238,18 +239,20 @@ export default function DisputeMediationChat({
 
       {thread ? (
         <div className="grid grid-cols-1 gap-2 rounded-xl border border-gray-200 bg-white/80 p-3 text-xs sm:grid-cols-3 dark:border-gray-800 dark:bg-gray-900/40">
-          <div>
-            <p className="font-semibold text-gray-500">Pembeli</p>
-            <p className="text-gray-800 dark:text-white/90">
-              {thread.negotiation.buyer.fullName}
-            </p>
-          </div>
-          <div>
-            <p className="font-semibold text-gray-500">Penjual</p>
-            <p className="text-gray-800 dark:text-white/90">
-              {thread.negotiation.seller.fullName}
-            </p>
-          </div>
+          <PartyAvatar
+            name={thread.negotiation.buyer.fullName}
+            avatarUrl={thread.negotiation.buyer.avatarUrl}
+            subtitle="Pembeli"
+            tone="buyer"
+            size="sm"
+          />
+          <PartyAvatar
+            name={thread.negotiation.seller.fullName}
+            avatarUrl={thread.negotiation.seller.avatarUrl}
+            subtitle="Penjual"
+            tone="seller"
+            size="sm"
+          />
           <div>
             <p className="font-semibold text-gray-500">Mediator</p>
             <p className="text-gray-800 dark:text-white/90">Admin BISA</p>

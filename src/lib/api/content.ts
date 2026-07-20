@@ -53,11 +53,13 @@ export async function fetchFaqs(params?: {
   page?: number;
   limit?: number;
   includeInactive?: boolean;
+  search?: string;
 }): Promise<{ items: FaqItem[]; total: number }> {
   const query = new URLSearchParams();
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.includeInactive) query.set("includeInactive", "true");
+  if (params?.search) query.set("search", params.search);
   const qs = query.toString();
   const res = await apiGet<FaqItem[]>(`/faqs${qs ? `?${qs}` : ""}`);
   return {

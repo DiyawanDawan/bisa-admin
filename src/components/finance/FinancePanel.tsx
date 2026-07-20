@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import WalletsList from "@/components/finance/WalletsList";
+import Pagination from "@/components/tables/Pagination";
 import {
   approvePayout,
   createFee,
@@ -110,8 +111,14 @@ export default function FinancePanel() {
     [router],
   );
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [txTotal, setTxTotal] = useState(0);
+  const [txPage, setTxPage] = useState(1);
+  const [txLimit, setTxLimit] = useState(20);
   const [fees, setFees] = useState<PlatformFee[]>([]);
   const [payouts, setPayouts] = useState<PayoutItem[]>([]);
+  const [payoutTotal, setPayoutTotal] = useState(0);
+  const [payoutPage, setPayoutPage] = useState(1);
+  const [payoutLimit, setPayoutLimit] = useState(20);
   const [loading, setLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -152,25 +159,35 @@ export default function FinancePanel() {
     try {
       if (tab === "transactions") {
         const res = await fetchTransactions({
-          page: 1,
-          limit: 30,
+          page: txPage,
+          limit: txLimit,
           search: txSearch.trim() || undefined,
           type: txTypeFilter || undefined,
           status: txStatusFilter || undefined,
         });
         setTransactions(res.items);
+        setTxTotal(res.total);
       } else if (tab === "fees") {
         setFees(await fetchFees());
       } else if (tab === "payouts") {
-        const res = await fetchPayouts({ page: 1, limit: 30 });
+        const res = await fetchPayouts({ page: payoutPage, limit: payoutLimit });
         setPayouts(res.items);
+        setPayoutTotal(res.total);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat data.");
     } finally {
       setLoading(false);
     }
-  }, [tab, txSearch, txTypeFilter, txStatusFilter]);
+  }, [tab, txPage, txLimit, txSearch, txTypeFilter, txStatusFilter, payoutPage, payoutLimit]);
+
+  useEffect(() => {
+    setTxPage(1);
+  }, [txSearch, txTypeFilter, txStatusFilter, txLimit]);
+
+  useEffect(() => {
+    setPayoutPage(1);
+  }, [payoutLimit]);
 
   useEffect(() => {
     const q = tabFromQuery(searchParams.get("tab"));
@@ -406,6 +423,7 @@ export default function FinancePanel() {
           ) : payouts.length === 0 ? (
             <p className="py-10 text-center text-sm text-gray-500">Tidak ada antrean penarikan.</p>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -476,6 +494,14 @@ export default function FinancePanel() {
                 })}
               </TableBody>
             </Table>
+            <Pagination
+              page={payoutPage}
+              total={payoutTotal}
+              limit={payoutLimit}
+              onPageChange={setPayoutPage}
+              onLimitChange={setPayoutLimit}
+            />
+            </>
           )}
         </ComponentCard>
       )}
@@ -535,6 +561,7 @@ export default function FinancePanel() {
           ) : transactions.length === 0 ? (
             <p className="py-10 text-center text-sm text-gray-500">Tidak ada transaksi.</p>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -582,6 +609,14 @@ export default function FinancePanel() {
                 ))}
               </TableBody>
             </Table>
+            <Pagination
+              page={txPage}
+              total={txTotal}
+              limit={txLimit}
+              onPageChange={setTxPage}
+              onLimitChange={setTxLimit}
+            />
+            </>
           )}
         </ComponentCard>
       )}

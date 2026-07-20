@@ -23,6 +23,7 @@ import {
 import { ApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format";
 import type { AdminIotDeviceItem, AdminIotProvisionResult } from "@/types/extended";
+import Pagination from "@/components/tables/Pagination";
 import { useCallback, useEffect } from "react";
 
 function liveBadgeColor(status: string): "success" | "warning" | "error" | "light" {
@@ -35,6 +36,7 @@ export default function IotDevicesPanel() {
   const [items, setItems] = useState<AdminIotDeviceItem[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -52,11 +54,15 @@ export default function IotDevicesPanel() {
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<AdminIotDeviceItem | null>(null);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, limit]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchAdminIotDevices({ page, limit: 20, search });
+      const res = await fetchAdminIotDevices({ page, limit, search });
       setItems(res.items);
       setTotal(res.total);
     } catch (e) {
@@ -64,7 +70,7 @@ export default function IotDevicesPanel() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, limit, search]);
 
   useEffect(() => {
     load();
@@ -434,9 +440,15 @@ export default function IotDevicesPanel() {
           </div>
         )}
 
-        <p className="mt-4 text-xs text-gray-500">
-          Total {total} perangkat · Halaman {page}
-        </p>
+        {items.length > 0 && (
+          <Pagination
+            page={page}
+            total={total}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={setLimit}
+          />
+        )}
       </ComponentCard>
 
       {/* Device Secret Modal */}

@@ -15,6 +15,7 @@ import type {
   AdminIotDeviceItem,
   AdminIotProvisionResult,
   ForumCategoryOption,
+  ForumGroupAdmin,
   ForumPostAdmin,
   MarketTrendItem,
   OrderAnalytics,
@@ -116,6 +117,25 @@ export async function fetchForumPostsAdmin(params?: {
 export async function fetchForumCategoriesAdmin(): Promise<ForumCategoryOption[]> {
   const res = await apiGet<ForumCategoryOption[]>("/admin/forum/categories");
   return res.data;
+}
+
+export async function fetchForumGroupsAdmin(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}): Promise<{ items: ForumGroupAdmin[]; total: number }> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.search) query.set("search", params.search);
+  const qs = query.toString();
+  const res = await apiGet<ForumGroupAdmin[]>(
+    `/admin/forum/groups${qs ? `?${qs}` : ""}`,
+  );
+  return {
+    items: res.data,
+    total: res.pagination?.total ?? res.data.length,
+  };
 }
 
 export async function fetchForumPostAdmin(id: string): Promise<ForumPostAdmin> {

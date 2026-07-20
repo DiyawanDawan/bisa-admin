@@ -1,6 +1,7 @@
 "use client";
 import Badge from "@/components/ui/badge/Badge";
 import AdminMediaImage from "@/components/common/AdminMediaImage";
+import Pagination from "@/components/tables/Pagination";
 import {
   Table,
   TableBody,
@@ -52,9 +53,14 @@ export default function DisputesTable() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("DISPUTED");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, limit]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,7 +68,7 @@ export default function DisputesTable() {
     try {
       const result = await fetchDisputes({
         page,
-        limit: 10,
+        limit,
         search: search.trim() || undefined,
         statusFilter: statusFilter || undefined,
       });
@@ -73,13 +79,11 @@ export default function DisputesTable() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [page, limit, search, statusFilter]);
 
   useEffect(() => {
     load();
   }, [load]);
-
-  const totalPages = Math.max(1, Math.ceil(total / 10));
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
@@ -270,30 +274,14 @@ export default function DisputesTable() {
         </Table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 dark:border-gray-800 sm:px-6">
-          <span className="text-sm text-gray-500">
-            Halaman {page} dari {totalPages} ({total} total)
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-gray-700"
-            >
-              Sebelumnya
-            </button>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-gray-700"
-            >
-              Berikutnya
-            </button>
-          </div>
-        </div>
+      {items.length > 0 && (
+        <Pagination
+          page={page}
+          total={total}
+          limit={limit}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
       )}
     </div>
   );

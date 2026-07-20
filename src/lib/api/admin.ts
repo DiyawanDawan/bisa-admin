@@ -32,6 +32,9 @@ import type {
   UserListItem,
   UserStatus,
   VerificationStatus,
+  PartnershipContract,
+  PartnershipListFilter,
+  PartnershipStatus,
 } from "@/types/admin";
 import { apiDownload, apiGet, apiPatch, apiPost, apiPut, apiRequest } from "@/lib/api-client";
 
@@ -518,4 +521,54 @@ export async function deregisterFcmToken(fcmToken: string): Promise<void> {
     method: "DELETE",
     body: JSON.stringify({ fcmToken }),
   });
+}
+
+export async function fetchPartnerships(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: PartnershipStatus;
+  filter?: PartnershipListFilter;
+}): Promise<{
+  items: PartnershipContract[];
+  total: number;
+  page: number;
+  limit: number;
+}> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.search) query.set("search", params.search);
+  if (params?.status) query.set("status", params.status);
+  if (params?.filter) query.set("filter", params.filter);
+
+  const qs = query.toString();
+  const res = await apiGet<PartnershipContract[]>(
+    `/admin/partnerships${qs ? `?${qs}` : ""}`,
+  );
+
+  return {
+    items: res.data,
+    total: res.pagination?.total ?? res.data.length,
+    page: res.pagination?.page ?? 1,
+    limit: res.pagination?.limit ?? 20,
+  };
+}
+
+export async function fetchPartnershipDetail(
+  id: string,
+): Promise<PartnershipContract> {
+  const res = await apiGet<PartnershipContract>(`/admin/partnerships/${id}`);
+  return res.data;
+}
+
+export async function signPartnershipAsPlatform(
+  id: string,
+  payload?: { signerName?: string; signerTitle?: string },
+): Promise<PartnershipContract> {
+  const res = await apiPost<PartnershipContract>(
+    `/admin/partnerships/${id}/sign`,
+    payload ?? {},
+  );
+  return res.data;
 }

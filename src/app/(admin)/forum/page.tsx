@@ -11,7 +11,7 @@ export default function ForumPage() {
     <div>
       <PageBreadcrumb
         pageTitle="Moderasi forum"
-        description="Buat, edit, publish, dan arsipkan posting komunitas BISA"
+        description="Buat, edit, publish, dan arsipkan posting. Detail menampilkan avatar penulis, banner grup, dan media."
       />
       <ForumModeration />
     </div>

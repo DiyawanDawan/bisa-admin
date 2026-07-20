@@ -37,7 +37,9 @@ const navItems: NavItem[] = [
     name: "Order",
     subItems: [
       { name: "Semua order", path: "/orders" },
+      { name: "BISA Express", path: "/bisa-express" },
       { name: "Sengketa", path: "/disputes" },
+      { name: "Kontrak kerjasama", path: "/partnerships" },
     ],
   },
   {

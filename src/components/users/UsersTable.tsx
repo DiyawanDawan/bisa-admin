@@ -2,6 +2,7 @@
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import UserAvatar from "@/components/common/UserAvatar";
+import Pagination from "@/components/tables/Pagination";
 import {
   Table,
   TableBody,
@@ -15,13 +16,14 @@ import type { UserListItem, UserStatus } from "@/types/admin";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-const ROLES = ["", "SUPPLIER", "BUYER", "ADMIN"] as const;
+const ROLES = ["", "SUPPLIER", "BUYER", "ADMIN", "COURIER"] as const;
 const STATUSES = ["", "ACTIVE", "BLOCKED", "INACTIVE", "DELETED"] as const;
 
 const ROLE_LABELS: Record<string, string> = {
   SUPPLIER: "Supplier",
   BUYER: "Pembeli",
   ADMIN: "Admin",
+  COURIER: "Kurir",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -33,9 +35,15 @@ const STATUS_LABELS: Record<string, string> = {
 
 function roleBadge(role: string) {
   const color =
-    role === "ADMIN" ? "dark" : role === "SUPPLIER" ? "primary" : "info";
+    role === "ADMIN"
+      ? "dark"
+      : role === "SUPPLIER"
+        ? "primary"
+        : role === "COURIER"
+          ? "warning"
+          : "info";
   return (
-    <Badge color={color as "dark" | "primary" | "info"} size="sm">
+    <Badge color={color as "dark" | "primary" | "info" | "warning"} size="sm">
       {ROLE_LABELS[role] ?? role}
     </Badge>
   );
@@ -72,6 +80,7 @@ export default function UsersTable({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +93,7 @@ export default function UsersTable({
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, roleFilter, statusFilter]);
+  }, [debouncedSearch, roleFilter, statusFilter, limit]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -92,7 +101,7 @@ export default function UsersTable({
     try {
       const result = await fetchUsers({
         page,
-        limit: 10,
+        limit,
         search: debouncedSearch || undefined,
         role: roleFilter || undefined,
         status: (statusFilter || undefined) as UserStatus | undefined,
@@ -104,7 +113,7 @@ export default function UsersTable({
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, roleFilter, statusFilter]);
+  }, [page, limit, debouncedSearch, roleFilter, statusFilter]);
 
   useEffect(() => {
     load();
@@ -125,8 +134,6 @@ export default function UsersTable({
       setActionId(null);
     }
   }
-
-  const totalPages = Math.max(1, Math.ceil(total / 10));
 
   return (
     <div id="users-table" className="scroll-mt-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
@@ -260,30 +267,14 @@ export default function UsersTable({
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-100 px-5 py-4 dark:border-gray-800">
-          <span className="text-sm text-gray-500">
-            Halaman {page} / {totalPages}
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
-            >
-              Sebelumnya
-            </button>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
-            >
-              Berikutnya
-            </button>
-          </div>
-        </div>
+      {items.length > 0 && (
+        <Pagination
+          page={page}
+          total={total}
+          limit={limit}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
       )}
     </div>
   );

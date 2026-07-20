@@ -6,6 +6,7 @@ import Input from "@/components/form/input/InputField";
 import Alert from "@/components/ui/alert/Alert";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
+import Pagination from "@/components/tables/Pagination";
 import {
   Table,
   TableBody,
@@ -25,6 +26,9 @@ type Props = {
 
 export default function WalletsList({ embedded = false }: Props) {
   const [items, setItems] = useState<Awaited<ReturnType<typeof fetchAdminWallets>>["items"]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -35,22 +39,27 @@ export default function WalletsList({ embedded = false }: Props) {
     return () => clearTimeout(t);
   }, [search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, limit]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetchAdminWallets({
-        page: 1,
-        limit: 50,
+        page,
+        limit,
         search: debouncedSearch || undefined,
       });
       setItems(res.items);
+      setTotal(res.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat dompet.");
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch]);
+  }, [page, limit, debouncedSearch]);
 
   useEffect(() => {
     load();
@@ -120,53 +129,62 @@ export default function WalletsList({ embedded = false }: Props) {
             : "Belum ada data dompet."}
         </p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
-                Supplier
-              </TableCell>
-              <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
-                Saldo tersedia
-              </TableCell>
-              <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
-                Total pendapatan
-              </TableCell>
-              <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
-                Status
-              </TableCell>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((w) => {
-              const bal = Number(w.balance) || 0;
-              return (
-                <TableRow key={w.id}>
-                  <TableCell className="px-4 py-3 text-sm">
-                    <Link
-                      href={`/users/${w.user.id}`}
-                      className="font-medium text-brand-600 hover:underline dark:text-brand-400"
-                    >
-                      {w.user.fullName}
-                    </Link>
-                    <span className="block text-theme-xs text-gray-400">{w.user.email}</span>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-sm font-semibold text-brand-700 dark:text-brand-400">
-                    {formatIDR(bal)}
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-sm">
-                    {formatIDR(Number(w.totalEarned))}
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <Badge color={bal > 0 ? "success" : "light"} size="sm">
-                      {bal > 0 ? "Ada saldo" : "Kosong"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
+                  Supplier
+                </TableCell>
+                <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
+                  Saldo tersedia
+                </TableCell>
+                <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
+                  Total pendapatan
+                </TableCell>
+                <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
+                  Status
+                </TableCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((w) => {
+                const bal = Number(w.balance) || 0;
+                return (
+                  <TableRow key={w.id}>
+                    <TableCell className="px-4 py-3 text-sm">
+                      <Link
+                        href={`/users/${w.user.id}`}
+                        className="font-medium text-brand-600 hover:underline dark:text-brand-400"
+                      >
+                        {w.user.fullName}
+                      </Link>
+                      <span className="block text-theme-xs text-gray-400">{w.user.email}</span>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-sm font-semibold text-brand-700 dark:text-brand-400">
+                      {formatIDR(bal)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-sm">
+                      {formatIDR(Number(w.totalEarned))}
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <Badge color={bal > 0 ? "success" : "light"} size="sm">
+                        {bal > 0 ? "Ada saldo" : "Kosong"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          <Pagination
+            page={page}
+            total={total}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={setLimit}
+          />
+        </>
       )}
     </>
   );

@@ -24,6 +24,7 @@ import {
 import { ApiError } from "@/lib/api-client";
 import { formatDate, formatIDR } from "@/lib/format";
 import type { ProductListItem, ProductStatus } from "@/types/admin";
+import Pagination from "@/components/tables/Pagination";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -111,6 +112,7 @@ export default function ProductsTable() {
   const [items, setItems] = useState<ProductListItem[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -122,13 +124,17 @@ export default function ProductsTable() {
   const [reason, setReason] = useState("");
   const [modalError, setModalError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, limit]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const result = await fetchProducts({
         page,
-        limit: 10,
+        limit,
         search: search.trim() || undefined,
       });
       setItems(result.items);
@@ -142,7 +148,7 @@ export default function ProductsTable() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, limit, search]);
 
   useEffect(() => {
     load();
@@ -253,7 +259,6 @@ export default function ProductsTable() {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(total / 10));
   const reasonLen = reason.trim().length;
   const canConfirmReason =
     pendingStatus &&
@@ -443,30 +448,14 @@ export default function ProductsTable() {
           </Table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-800">
-            <span className="text-theme-sm text-gray-500">
-              Halaman {page} dari {totalPages}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Sebelumnya
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Berikutnya
-              </Button>
-            </div>
-          </div>
+        {items.length > 0 && (
+          <Pagination
+            page={page}
+            total={total}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={setLimit}
+          />
         )}
       </ComponentCard>
 

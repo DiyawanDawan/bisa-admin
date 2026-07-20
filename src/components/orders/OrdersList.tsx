@@ -1,6 +1,8 @@
 "use client";
 import ComponentCard from "@/components/common/ComponentCard";
 import OrdersStatsPanel from "@/components/orders/OrdersStatsPanel";
+import PartyAvatar from "@/components/common/PartyAvatar";
+import Pagination from "@/components/tables/Pagination";
 import Badge from "@/components/ui/badge/Badge";
 import {
   Table,
@@ -10,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchAdminOrders } from "@/lib/api/extended";
-import { formatDate, formatIDR } from "@/lib/format";
+import { formatDate, formatIDR, formatOrderPayment, formatPaymentStatus } from "@/lib/format";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -47,6 +49,8 @@ function orderStatusBadge(status: string): "success" | "warning" | "error" | "li
 export default function OrdersList() {
   const [items, setItems] = useState<Awaited<ReturnType<typeof fetchAdminOrders>>["items"]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -60,13 +64,17 @@ export default function OrdersList() {
     return () => clearTimeout(t);
   }, [search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status, courierCode, deliveryStatus, limit]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetchAdminOrders({
-        page: 1,
-        limit: 30,
+        page,
+        limit,
         search: debouncedSearch || undefined,
         status: status || undefined,
         courierCode: courierCode || undefined,
@@ -79,7 +87,7 @@ export default function OrdersList() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, status, courierCode, deliveryStatus]);
+  }, [page, limit, debouncedSearch, status, courierCode, deliveryStatus]);
 
   useEffect(() => {
     load();
@@ -153,7 +161,7 @@ export default function OrdersList() {
           </div>
         )}
 
-        <ComponentCard title="Order terbaru" desc="Maks. 30 baris — gunakan filter status di atas">
+        <ComponentCard title="Daftar order" desc="Navigasi halaman dan atur jumlah baris per halaman">
           {loading ? (
             <div className="h-40 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
           ) : items.length === 0 ? (
@@ -161,6 +169,7 @@ export default function OrdersList() {
               <p className="text-sm text-gray-600 dark:text-gray-400">Tidak ada order untuk filter ini.</p>
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -173,6 +182,9 @@ export default function OrdersList() {
                     </TableCell>
                     <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
                       Total
+                    </TableCell>
+                    <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
+                      Pembayaran
                     </TableCell>
                     <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
                       Status
@@ -197,10 +209,36 @@ export default function OrdersList() {
                         )}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                        {o.buyer.fullName} → {o.seller.fullName}
+                        <div className="flex flex-col gap-2">
+                          <PartyAvatar
+                            name={o.buyer.fullName}
+                            avatarUrl={o.buyer.avatarUrl}
+                            subtitle="Pembeli"
+                            tone="buyer"
+                          />
+                          <PartyAvatar
+                            name={o.seller.fullName}
+                            avatarUrl={o.seller.avatarUrl}
+                            subtitle="Supplier"
+                            tone="seller"
+                          />
+                        </div>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-sm font-medium">
                         {formatIDR(Number(o.totalAmount))}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                        <p className="font-medium leading-snug">
+                          {formatOrderPayment(o.transaction)}
+                        </p>
+                        {o.transaction?.paymentStatus ? (
+                          <p className="mt-0.5 text-[10px] text-gray-500">
+                            {formatPaymentStatus(o.transaction.paymentStatus)}
+                            {o.transaction.paymentChannel?.code
+                              ? ` · ${o.transaction.paymentChannel.code}`
+                              : ""}
+                          </p>
+                        ) : null}
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <Badge color={orderStatusBadge(o.status)} size="sm">
@@ -215,6 +253,14 @@ export default function OrdersList() {
                 </TableBody>
               </Table>
             </div>
+            <Pagination
+              page={page}
+              total={total}
+              limit={limit}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+            />
+            </>
           )}
         </ComponentCard>
       </div>

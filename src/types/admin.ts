@@ -1,4 +1,4 @@
-export type UserRole = "ADMIN" | "BUYER" | "SUPPLIER";
+export type UserRole = "ADMIN" | "BUYER" | "SUPPLIER" | "COURIER";
 export type UserStatus = "ACTIVE" | "BLOCKED" | "INACTIVE" | "DELETED";
 export type OrderStatus =
   | "PENDING"
@@ -176,8 +176,8 @@ export interface DisputeChatThread {
   negotiation: {
     id: string;
     status: string;
-    buyer: { id: string; fullName: string; email?: string };
-    seller: { id: string; fullName: string; email?: string };
+    buyer: { id: string; fullName: string; email?: string; avatarUrl?: string | null };
+    seller: { id: string; fullName: string; email?: string; avatarUrl?: string | null };
     product?: { id: string; name: string };
   };
   messages: DisputeChatMessage[];
@@ -436,4 +436,68 @@ export interface DashboardVisualGallery {
     authorName: string;
     authorAvatarUrl: string | null;
   }>;
+}
+
+export type PartnershipStatus =
+  | "PENDING"
+  | "AWAITING_SIGNATURE"
+  | "ACTIVE"
+  | "REJECTED"
+  | "TERMINATED"
+  | "EXPIRED"
+  | "RENEWAL_PENDING";
+
+export type PartnershipListFilter =
+  | "all"
+  | "needs_action"
+  | "needs_platform_sign"
+  | "draft_pending";
+
+export interface PartnershipParty {
+  id: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  companyName?: string | null;
+  isVerified?: boolean;
+}
+
+export interface PartnershipSignature {
+  party: "BUYER" | "SUPPLIER" | "PLATFORM";
+  label: string;
+  signedAt: string | null;
+  signerName?: string | null;
+  signerTitle?: string | null;
+  companyName?: string | null;
+}
+
+export interface PartnershipContract {
+  id: string;
+  contractNumber: string;
+  title: string;
+  status: PartnershipStatus;
+  tier?: string;
+  description?: string | null;
+  productCategory?: string | null;
+  estimatedMonthlyQty?: number | null;
+  priceAgreement?: string | null;
+  deliveryTerms?: string | null;
+  paymentTerms?: string | null;
+  specialTerms?: string | null;
+  startDate: string;
+  endDate: string;
+  buyerSignedAt?: string | null;
+  sellerSignedAt?: string | null;
+  platformSignedAt?: string | null;
+  isFullySigned: boolean;
+  requiredSigners: number;
+  signedCount: number;
+  signers?: { buyer: boolean; supplier: boolean; platform: boolean };
+  signatures?: PartnershipSignature[];
+  needsPlatformSign?: boolean;
+  signatureLabel?: string;
+  rejectionReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  buyer: PartnershipParty;
+  supplier: PartnershipParty;
 }

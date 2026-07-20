@@ -1,6 +1,8 @@
 "use client";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
+import AdminMediaImage from "@/components/common/AdminMediaImage";
+import PartyAvatar from "@/components/common/PartyAvatar";
 import {
   fetchChatInbox,
   fetchChatStats,
@@ -280,9 +282,22 @@ export default function AdminChatPanel() {
                         {NEGO_STATUS_LABELS[item.status] ?? item.status}
                       </Badge>
                     </div>
-                    <p className="mt-0.5 text-[10px] text-gray-500">
-                      {item.buyer.fullName} ↔ {item.seller.fullName}
-                    </p>
+                    <div className="mt-1.5 flex min-w-0 flex-col gap-1">
+                      <PartyAvatar
+                        name={item.buyer.fullName}
+                        avatarUrl={item.buyer.avatarUrl}
+                        subtitle="Pembeli"
+                        tone="buyer"
+                        size="sm"
+                      />
+                      <PartyAvatar
+                        name={item.seller.fullName}
+                        avatarUrl={item.seller.avatarUrl}
+                        subtitle="Supplier"
+                        tone="seller"
+                        size="sm"
+                      />
+                    </div>
                     <p className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400">
                       {previewText(item.lastMessage)}
                     </p>
@@ -320,23 +335,29 @@ export default function AdminChatPanel() {
                       {NEGO_STATUS_LABELS[threadMeta.status] ?? threadMeta.status}
                     </Badge>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-3 text-xs">
-                    <span>
-                      Pembeli:{" "}
-                      <Link href={`/users/${threadMeta.buyer.id}`} className={`${brandLinkClass} hover:underline`}>
-                        {threadMeta.buyer.fullName}
-                      </Link>
-                    </span>
-                    <span>
-                      Supplier:{" "}
-                      <Link href={`/users/${threadMeta.seller.id}`} className={`${brandLinkClass} hover:underline`}>
-                        {threadMeta.seller.fullName}
-                      </Link>
-                    </span>
+                  <div className="mt-2 flex flex-wrap gap-4">
+                    <Link href={`/users/${threadMeta.buyer.id}`} className="min-w-0">
+                      <PartyAvatar
+                        name={threadMeta.buyer.fullName}
+                        avatarUrl={threadMeta.buyer.avatarUrl}
+                        subtitle="Pembeli"
+                        tone="buyer"
+                        size="sm"
+                      />
+                    </Link>
+                    <Link href={`/users/${threadMeta.seller.id}`} className="min-w-0">
+                      <PartyAvatar
+                        name={threadMeta.seller.fullName}
+                        avatarUrl={threadMeta.seller.avatarUrl}
+                        subtitle="Supplier"
+                        tone="seller"
+                        size="sm"
+                      />
+                    </Link>
                     {threadMeta.order && (
                       <Link
                         href={`/orders/${threadMeta.order.id}`}
-                        className={`${brandLinkClass} hover:underline`}
+                        className={`${brandLinkClass} self-center text-xs hover:underline`}
                       >
                         Order {threadMeta.order.orderNumber}
                       </Link>
@@ -413,7 +434,19 @@ function MessageBubble({ message }: { message: ChatMessageItem }) {
     : "bg-brand-600 text-white dark:bg-brand-500";
 
   return (
-    <div className={`flex ${align}`}>
+    <div className={`flex items-end gap-2 ${align}`}>
+      {isBuyer ? (
+        <AdminMediaImage
+          src={message.sender.avatarUrl}
+          alt={message.sender.fullName}
+          className="h-7 w-7 shrink-0 rounded-full border border-gray-200 dark:border-gray-700"
+          fallback={
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-light-100 text-[10px] font-semibold text-blue-light-700 dark:bg-blue-light-500/20 dark:text-blue-light-300">
+              {(message.sender.fullName?.charAt(0) || "?").toUpperCase()}
+            </span>
+          }
+        />
+      ) : null}
       <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${bubbleClass}`}>
         <p className="text-[10px] font-medium opacity-80 mb-0.5">
           {message.sender.fullName} · {message.sender.role}
@@ -434,6 +467,18 @@ function MessageBubble({ message }: { message: ChatMessageItem }) {
           {message.editedAt ? " · diedit" : ""}
         </p>
       </div>
+      {!isBuyer ? (
+        <AdminMediaImage
+          src={message.sender.avatarUrl}
+          alt={message.sender.fullName}
+          className="h-7 w-7 shrink-0 rounded-full border border-gray-200 dark:border-gray-700"
+          fallback={
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-success-100 text-[10px] font-semibold text-success-700 dark:bg-success-500/20 dark:text-success-300">
+              {(message.sender.fullName?.charAt(0) || "?").toUpperCase()}
+            </span>
+          }
+        />
+      ) : null}
     </div>
   );
 }

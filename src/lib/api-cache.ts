@@ -19,6 +19,7 @@ const CACHEABLE_PREFIXES = [
 const NEVER_CACHE_PREFIXES = [
   "/admin/products",
   "/admin/orders/disputes",
+  "/admin/partnerships",
   "/admin/finance/payouts",
   "/admin/users/verifications",
   "/admin/crm/contacts",

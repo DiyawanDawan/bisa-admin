@@ -22,6 +22,23 @@ export interface OrderAnalytics {
   monthlyRevenue: OrderChartPoint[];
 }
 
+export interface AdminOrderPaymentInfo {
+  id: string;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+  status?: string | null;
+  paidAt?: string | null;
+  amount?: number | string | null;
+  externalId?: string | null;
+  paymentChannel?: {
+    id: string;
+    code: string;
+    name: string;
+    group?: string | null;
+    logoUrl?: string | null;
+  } | null;
+}
+
 export interface AdminOrderListItem {
   id: string;
   orderNumber: string;
@@ -29,11 +46,12 @@ export interface AdminOrderListItem {
   totalAmount: number | string;
   totalQuantity: number | string;
   createdAt: string;
-  buyer: { id: string; fullName: string; email: string };
-  seller: { id: string; fullName: string; email: string };
+  buyer: { id: string; fullName: string; email: string; avatarUrl?: string | null };
+  seller: { id: string; fullName: string; email: string; avatarUrl?: string | null };
   courierCode?: string | null;
   deliveryStatus?: string | null;
   dispute?: { id: string; status: string } | null;
+  transaction?: AdminOrderPaymentInfo | null;
 }
 
 export interface AdminOrderShippingInfo {
@@ -71,14 +89,15 @@ export interface AdminOrderDetail {
   status: string;
   totalAmount: number | string;
   createdAt: string;
-  buyer: { fullName: string; email: string };
-  seller: { fullName: string; email: string };
+  buyer: { fullName: string; email: string; avatarUrl?: string | null; phone?: string | null };
+  seller: { fullName: string; email: string; avatarUrl?: string | null; phone?: string | null };
   items: Array<{
     quantity: number | string;
     pricePerUnit: number | string;
     product: { name: string; thumbnailUrl?: string | null };
   }>;
   dispute?: { id: string; status: string } | null;
+  transaction?: AdminOrderPaymentInfo | null;
   orderShipping?: AdminOrderShippingInfo | null;
   shipment?: AdminShipmentInfo | null;
 }
@@ -123,15 +142,52 @@ export interface ForumPostAdmin {
   content: string;
   status: string;
   categoryId?: string | null;
+  groupId?: string | null;
   tags?: string[] | null;
+  mediaUrls?: Array<{ url: string; type?: string } | string> | null;
+  productMentions?: Array<{ id: string; name: string; slug?: string }> | null;
   upvotes: number;
   downvotes: number;
   viewCount: number;
   createdAt: string;
   updatedAt?: string;
-  user: { id: string; fullName: string; email: string; role: string };
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: string;
+    avatarUrl?: string | null;
+  };
   category?: { id: string; name: string } | null;
+  group?: {
+    id: string;
+    name: string;
+    slug?: string;
+    description?: string | null;
+    avatarUrl?: string | null;
+    bannerUrl?: string | null;
+    memberCount?: number;
+  } | null;
   _count: { comments: number };
+}
+
+export interface ForumGroupAdmin {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  avatarUrl?: string | null;
+  bannerUrl?: string | null;
+  isPublic: boolean;
+  memberCount: number;
+  postCount: number;
+  createdAt: string;
+  owner: {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarUrl?: string | null;
+  };
 }
 
 export interface ForumCategoryOption {
@@ -172,8 +228,8 @@ export interface ChatInboxItem {
   updatedAt: string;
   createdAt: string;
   totalEstimate: number | string;
-  buyer: { id: string; fullName: string; email: string };
-  seller: { id: string; fullName: string; email: string };
+  buyer: { id: string; fullName: string; email: string; avatarUrl?: string | null };
+  seller: { id: string; fullName: string; email: string; avatarUrl?: string | null };
   product: { id: string; name: string };
   order: { id: string; orderNumber: string; status: string } | null;
   _count: { messages: number };
@@ -214,8 +270,20 @@ export interface ChatThreadData {
     totalEstimate: number | string;
     createdAt: string;
     updatedAt: string;
-    buyer: { id: string; fullName: string; email: string; phone: string | null };
-    seller: { id: string; fullName: string; email: string; phone: string | null };
+    buyer: {
+      id: string;
+      fullName: string;
+      email: string;
+      phone: string | null;
+      avatarUrl?: string | null;
+    };
+    seller: {
+      id: string;
+      fullName: string;
+      email: string;
+      phone: string | null;
+      avatarUrl?: string | null;
+    };
     product: { id: string; name: string; unit: string };
     order: { id: string; orderNumber: string; status: string } | null;
     _count: { messages: number };

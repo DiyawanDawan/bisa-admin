@@ -14,6 +14,7 @@ import { fetchKYCQueue, reviewKYC } from "@/lib/api/admin";
 import { resolveMediaUrl } from "@/lib/media-url";
 import { formatDate } from "@/lib/format";
 import type { KYCQueueItem } from "@/types/admin";
+import Pagination from "@/components/tables/Pagination";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -42,16 +43,21 @@ function DocLink({ href, label }: { href?: string | null; label: string }) {
 export default function KYCQueueTable() {
   const [items, setItems] = useState<KYCQueueItem[]>([]);
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
 
+  useEffect(() => {
+    setPage(1);
+  }, [limit]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchKYCQueue({ page, limit: 10, status: "PENDING" });
+      const result = await fetchKYCQueue({ page, limit, status: "PENDING" });
       setItems(result.items);
       setTotal(result.total);
     } catch {
@@ -59,7 +65,7 @@ export default function KYCQueueTable() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, limit]);
 
   useEffect(() => {
     load();
@@ -83,8 +89,6 @@ export default function KYCQueueTable() {
       setActionId(null);
     }
   }
-
-  const totalPages = Math.max(1, Math.ceil(total / 10));
 
   return (
     <ComponentCard title="Antrean KYC" desc="Verifikasi identitas pengguna">
@@ -190,25 +194,14 @@ export default function KYCQueueTable() {
         </Table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
-          >
-            Sebelumnya
-          </button>
-          <button
-            type="button"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
-          >
-            Berikutnya
-          </button>
-        </div>
+      {items.length > 0 && (
+        <Pagination
+          page={page}
+          total={total}
+          limit={limit}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
       )}
     </ComponentCard>
   );

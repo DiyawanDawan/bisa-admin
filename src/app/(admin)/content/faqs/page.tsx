@@ -9,7 +9,10 @@ export const metadata: Metadata = {
 export default function FaqsPage() {
   return (
     <div>
-      <PageBreadcrumb pageTitle="Manajemen FAQ" />
+      <PageBreadcrumb
+        pageTitle="Manajemen FAQ"
+        description="Kelola pertanyaan & jawaban Help Center — lihat detail lengkap di panel kanan"
+      />
       <FaqsManager />
     </div>
   );
