@@ -66,17 +66,22 @@ export default function DashboardVisualGallerySection({
 
   if (!data) return null;
 
+  const products = Array.isArray(data.products) ? data.products : [];
+  const storeBanners = Array.isArray(data.storeBanners) ? data.storeBanners : [];
+  const supplierStores = Array.isArray(data.supplierStores) ? data.supplierStores : [];
+  const forumMedia = Array.isArray(data.forumMedia) ? data.forumMedia : [];
+
   return (
     <div className="space-y-6">
       <ComponentCard
         title="Produk terbaru"
         desc="Preview gambar listing — moderasi cepat"
       >
-        {data.products.length === 0 ? (
+        {products.length === 0 ? (
           <p className={`text-sm ${mutedTextClass}`}>Belum ada produk dengan foto.</p>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            {data.products.map((p) => (
+            {products.map((p) => (
               <Link
                 key={p.id}
                 href="/products"
@@ -111,11 +116,11 @@ export default function DashboardVisualGallerySection({
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <ComponentCard title="Banner toko supplier" desc="Visual etalase toko di marketplace">
-          {data.storeBanners.length === 0 ? (
+          {storeBanners.length === 0 ? (
             <p className={`text-sm ${mutedTextClass}`}>Belum ada banner toko aktif.</p>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {data.storeBanners.map((b) => (
+              {storeBanners.map((b) => (
                 <div
                   key={b.id}
                   className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800"
@@ -147,11 +152,11 @@ export default function DashboardVisualGallerySection({
         </ComponentCard>
 
         <ComponentCard title="Toko & supplier" desc="Avatar dan profil toko terdaftar">
-          {data.supplierStores.length === 0 ? (
+          {supplierStores.length === 0 ? (
             <p className={`text-sm ${mutedTextClass}`}>Belum ada supplier aktif.</p>
           ) : (
             <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data.supplierStores.map((s) => (
+              {supplierStores.map((s) => (
                 <li key={s.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                   <GalleryImage
                     src={s.avatarUrl}
@@ -179,10 +184,10 @@ export default function DashboardVisualGallerySection({
         </ComponentCard>
       </div>
 
-      {data.forumMedia.length > 0 ? (
+      {forumMedia.length > 0 ? (
         <ComponentCard title="Media forum" desc="Posting dengan lampiran gambar">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-4">
-            {data.forumMedia.map((f) => (
+            {forumMedia.map((f) => (
               <Link
                 key={f.id}
                 href="/forum"

@@ -2,6 +2,7 @@
 
 import { useApexChartTheme } from "@/hooks/useApexChartTheme";
 import { buildDonutChartOptions } from "@/lib/apex-chart-presets";
+import { asArray } from "@/lib/chart-data";
 import type { ApexOptions } from "apexcharts";
 import ReactApexChart from "@/components/charts/ReactApexChartClient";
 import { useMemo } from "react";
@@ -34,13 +35,15 @@ export default function AdminDonutChart({
   emptyMessage = "Belum ada data.",
 }: AdminDonutChartProps) {
   const { baseChart, isDark } = useApexChartTheme();
+  const safeLabels = asArray(labels);
+  const safeSeries = asArray(series).map((v) => Number(v) || 0);
 
-  const hasData = series.length > 0 && series.some((v) => Number(v) > 0);
+  const hasData = safeSeries.length > 0 && safeSeries.some((v) => Number(v) > 0);
 
   const options: ApexOptions = useMemo(
     () => ({
       ...buildDonutChartOptions(baseChart, {
-        labels,
+        labels: safeLabels,
         isDark,
         centerLabel,
         formatTotal,
@@ -48,7 +51,7 @@ export default function AdminDonutChart({
         colors,
       }),
     }),
-    [baseChart, labels, isDark, centerLabel, formatTotal, formatValue, colors],
+    [baseChart, safeLabels, isDark, centerLabel, formatTotal, formatValue, colors],
   );
 
   if (loading) {
@@ -67,7 +70,7 @@ export default function AdminDonutChart({
   return (
     <div className="max-w-full overflow-x-auto custom-scrollbar">
       <div className="mx-auto w-full max-w-sm">
-        <ReactApexChart options={options} series={series} type="donut" height={height} />
+        <ReactApexChart options={options} series={safeSeries} type="donut" height={height} />
       </div>
     </div>
   );

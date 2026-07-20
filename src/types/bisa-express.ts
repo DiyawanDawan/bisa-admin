@@ -1,10 +1,12 @@
 export type BisaExpressDashboard = {
+  todayCount?: number;
+  activeDrivers?: number;
+  byStatus?: Array<{ status?: string; _count?: { _all?: number } }>;
   awaitingPickup?: number;
   inTransit?: number;
   outForDelivery?: number;
   deliveredToday?: number;
   failedDelivery?: number;
-  activeDrivers?: number;
   [key: string]: unknown;
 };
 
@@ -71,4 +73,16 @@ export type BisaExpressCoverageItem = {
   isPickup: boolean;
   isDelivery: boolean;
   isActive: boolean;
+};
+
+export type BisaExpressHubItem = {
+  id: string;
+  code: string;
+  name: string;
+  type?: string;
+  isActive: boolean;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  operatingHours?: string | null;
+  maxDailyCapacity?: number | null;
 };

@@ -54,10 +54,14 @@ function previewText(msg: ChatInboxItem["lastMessage"]): string {
   return text.length > 72 ? `${text.slice(0, 72)}…` : text;
 }
 
+type ChatTab = "negotiation" | "dispute";
+
 export default function AdminChatPanel() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomId = searchParams.get("room");
+  const tabParam = searchParams.get("tab");
+  const chatTab: ChatTab = tabParam === "dispute" ? "dispute" : "negotiation";
 
   const [stats, setStats] = useState<ChatStats | null>(null);
   const [inbox, setInbox] = useState<ChatInboxItem[]>([]);
@@ -97,7 +101,8 @@ export default function AdminChatPanel() {
         page: 1,
         limit: 40,
         search: debouncedSearch || undefined,
-        status: statusFilter || undefined,
+        status: chatTab === "negotiation" ? statusFilter || undefined : undefined,
+        scope: chatTab,
       });
       setInbox(res.items);
       setInboxTotal(res.total);
@@ -106,7 +111,7 @@ export default function AdminChatPanel() {
     } finally {
       setLoadingInbox(false);
     }
-  }, [debouncedSearch, statusFilter]);
+  }, [debouncedSearch, statusFilter, chatTab]);
 
   const loadThread = useCallback(async (negotiationId: string) => {
     setLoadingThread(true);
@@ -131,16 +136,25 @@ export default function AdminChatPanel() {
       const msg = err instanceof Error ? err.message : "Gagal memuat percakapan.";
       setError(msg);
       if (msg.toLowerCase().includes("akses") || msg.includes("403")) {
-        router.replace("/chat", { scroll: false });
+        router.replace(`/chat?tab=${chatTab}`, { scroll: false });
       }
     } finally {
       setLoadingThread(false);
     }
-  }, [router]);
+  }, [router, chatTab]);
 
   const selectRoom = useCallback(
     (id: string) => {
-      router.replace(`/chat?room=${id}`, { scroll: false });
+      router.replace(`/chat?tab=${chatTab}&room=${id}`, { scroll: false });
+    },
+    [router, chatTab],
+  );
+
+  const switchTab = useCallback(
+    (next: ChatTab) => {
+      router.replace(`/chat?tab=${next}`, { scroll: false });
+      setMessages([]);
+      setThreadMeta(null);
     },
     [router],
   );
@@ -190,20 +204,49 @@ export default function AdminChatPanel() {
   }
 
   const kpis = stats
-    ? [
-        { label: "Ruang saya", value: stats.totalRooms },
-        { label: "Total pesan", value: stats.totalMessages },
-        { label: "Aktif 7 hari", value: stats.activeRooms },
-        { label: "Nego terbuka", value: stats.openNegotiations },
-      ]
+    ? chatTab === "dispute"
+      ? [{ label: "Grup sengketa", value: stats.disputeGroups ?? inboxTotal }]
+      : [
+          { label: "Ruang saya", value: stats.totalRooms },
+          { label: "Total pesan", value: stats.totalMessages },
+          { label: "Aktif 7 hari", value: stats.activeRooms },
+          { label: "Nego terbuka", value: stats.openNegotiations },
+        ]
     : [];
+
+  const isDisputeTab = chatTab === "dispute";
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant={chatTab === "negotiation" ? "primary" : "outline"}
+          onClick={() => switchTab("negotiation")}
+        >
+          Negosiasi
+        </Button>
+        <Button
+          size="sm"
+          variant={chatTab === "dispute" ? "primary" : "outline"}
+          onClick={() => switchTab("dispute")}
+        >
+          Grup Sengketa
+        </Button>
+      </div>
+
       <div className="rounded-xl border border-brand-100 bg-brand-50/80 px-4 py-3 text-sm text-gray-700 dark:border-brand-900/40 dark:bg-brand-500/10 dark:text-gray-300">
-        Hanya menampilkan <strong>chat negosiasi Anda</strong> — ruang di mana akun login ini
-        terdaftar sebagai pembeli atau supplier. Chat antar pengguna lain tidak dapat dibuka dari
-        panel admin.
+        {isDisputeTab ? (
+          <>
+            <strong>Grup mediasi sengketa</strong> — chat 3 pihak (pembeli, penjual, admin/Hakim
+            BISA). Grup dibuat dari halaman detail sengketa.
+          </>
+        ) : (
+          <>
+            Hanya menampilkan <strong>chat negosiasi Anda</strong> — ruang di mana akun login ini
+            terdaftar sebagai pembeli atau supplier.
+          </>
+        )}
       </div>
 
       {kpis.length > 0 && (
@@ -231,23 +274,31 @@ export default function AdminChatPanel() {
         <aside className="flex w-full max-w-[340px] flex-col border-r border-gray-200 dark:border-gray-800">
           <div className="space-y-2 border-b border-gray-100 p-3 dark:border-gray-800">
             <input
-              placeholder="Cari produk, pembeli, supplier..."
+              placeholder={
+                isDisputeTab
+                  ? "Cari order, pembeli, supplier…"
+                  : "Cari produk, pembeli, supplier..."
+              }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={nativeInputClass}
             />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className={nativeSelectClass}
-            >
-              {NEGO_STATUSES.map((s) => (
-                <option key={s || "all"} value={s}>
-                  {s ? (NEGO_STATUS_LABELS[s] ?? s) : "Semua status nego"}
-                </option>
-              ))}
-            </select>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400">{inboxTotal} ruang negosiasi Anda</p>
+            {!isDisputeTab ? (
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className={nativeSelectClass}
+              >
+                {NEGO_STATUSES.map((s) => (
+                  <option key={s || "all"} value={s}>
+                    {s ? (NEGO_STATUS_LABELS[s] ?? s) : "Semua status nego"}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">
+              {inboxTotal} {isDisputeTab ? "grup sengketa" : "ruang negosiasi Anda"}
+            </p>
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -259,8 +310,9 @@ export default function AdminChatPanel() {
               </div>
             ) : inbox.length === 0 ? (
               <p className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                Tidak ada negosiasi untuk akun ini. Login sebagai pembeli/supplier yang ikut nego
-                atau buka nego dari aplikasi mobile.
+                {isDisputeTab
+                  ? "Belum ada grup sengketa. Buat grup dari halaman detail sengketa terlebih dahulu."
+                  : "Tidak ada negosiasi untuk akun ini. Login sebagai pembeli/supplier yang ikut nego atau buka nego dari aplikasi mobile."}
               </p>
             ) : (
               inbox.map((item) => {
@@ -276,11 +328,22 @@ export default function AdminChatPanel() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="line-clamp-1 text-sm font-medium text-gray-800 dark:text-white/90">
-                        {item.product.name}
+                        {isDisputeTab
+                          ? `Sengketa · ${item.order?.orderNumber ?? item.product.name}`
+                          : item.product.name}
                       </p>
-                      <Badge color={negoBadgeColor(item.status)} size="sm">
-                        {NEGO_STATUS_LABELS[item.status] ?? item.status}
-                      </Badge>
+                      {isDisputeTab ? (
+                        <Badge
+                          color={item.mediationStartedAt ? "success" : "warning"}
+                          size="sm"
+                        >
+                          {item.mediationStartedAt ? "Aktif" : "Belum mulai"}
+                        </Badge>
+                      ) : (
+                        <Badge color={negoBadgeColor(item.status)} size="sm">
+                          {NEGO_STATUS_LABELS[item.status] ?? item.status}
+                        </Badge>
+                      )}
                     </div>
                     <div className="mt-1.5 flex min-w-0 flex-col gap-1">
                       <PartyAvatar
@@ -315,8 +378,14 @@ export default function AdminChatPanel() {
         <section className="flex min-w-0 flex-1 flex-col">
           {!roomId ? (
             <div className="flex flex-1 flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400">
-              <p className="text-sm font-medium">Pilih ruang negosiasi Anda</p>
-              <p className="mt-1 text-xs">Hanya percakapan yang melibatkan akun login ini</p>
+              <p className="text-sm font-medium">
+                {isDisputeTab ? "Pilih grup mediasi sengketa" : "Pilih ruang negosiasi Anda"}
+              </p>
+              <p className="mt-1 text-xs">
+                {isDisputeTab
+                  ? "Mediasi 3 pihak sebagai Hakim BISA"
+                  : "Hanya percakapan yang melibatkan akun login ini"}
+              </p>
             </div>
           ) : (
             <>
@@ -355,12 +424,22 @@ export default function AdminChatPanel() {
                       />
                     </Link>
                     {threadMeta.order && (
-                      <Link
-                        href={`/orders/${threadMeta.order.id}`}
-                        className={`${brandLinkClass} self-center text-xs hover:underline`}
-                      >
-                        Order {threadMeta.order.orderNumber}
-                      </Link>
+                      <>
+                        <Link
+                          href={`/orders/${threadMeta.order.id}`}
+                          className={`${brandLinkClass} self-center text-xs hover:underline`}
+                        >
+                          Order {threadMeta.order.orderNumber}
+                        </Link>
+                        {isDisputeTab ? (
+                          <Link
+                            href={`/disputes/${threadMeta.order.id}`}
+                            className={`${brandLinkClass} self-center text-xs hover:underline`}
+                          >
+                            Detail sengketa
+                          </Link>
+                        ) : null}
+                      </>
                     )}
                   </div>
                 </header>
@@ -373,7 +452,9 @@ export default function AdminChatPanel() {
                 {loadingThread && messages.length === 0 ? (
                   <div className="h-full animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
                 ) : (
-                  messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
+                  messages.map((msg) => (
+                    <MessageBubble key={msg.id} message={msg} disputeMode={isDisputeTab} />
+                  ))
                 )}
                 <div ref={messagesEndRef} />
               </div>
@@ -383,13 +464,19 @@ export default function AdminChatPanel() {
                 className="border-t border-gray-100 p-3 dark:border-gray-800"
               >
                 <p className="mb-2 text-[10px] text-gray-500 dark:text-gray-400">
-                  Pesan dikirim sebagai Anda (pembeli atau supplier) di ruang negosiasi ini
+                  {isDisputeTab
+                    ? "Pesan dikirim sebagai Hakim BISA — pembeli & penjual melihat di app mobile"
+                    : "Pesan dikirim sebagai Anda (pembeli atau supplier) di ruang negosiasi ini"}
                 </p>
                 <div className="flex gap-2">
                   <textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
-                    placeholder="Tulis pesan..."
+                    placeholder={
+                      isDisputeTab
+                        ? "Tulis pesan mediasi sengketa…"
+                        : "Tulis pesan..."
+                    }
                     rows={2}
                     className={`min-h-[44px] flex-1 ${textareaClass}`}
                   />
@@ -406,11 +493,19 @@ export default function AdminChatPanel() {
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessageItem }) {
+function MessageBubble({
+  message,
+  disputeMode = false,
+}: {
+  message: ChatMessageItem;
+  disputeMode?: boolean;
+}) {
   const isSystem = message.isSystemMessage;
-  const isAdmin = message.sender.role === "ADMIN" || message.content.includes("[Admin BISA");
+  const isAdmin =
+    message.sender.role === "ADMIN" || message.content.includes("[Admin BISA");
 
-  if (isSystem) {
+  if (isSystem || (disputeMode && isAdmin)) {
+    const body = message.content.replace(/\[Admin BISA\]\s?/g, "").trim();
     return (
       <div className="flex justify-center">
         <div
@@ -420,7 +515,12 @@ function MessageBubble({ message }: { message: ChatMessageItem }) {
               : "bg-gray-200/80 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
           }`}
         >
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          {isAdmin ? (
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide opacity-80">
+              Hakim BISA (Admin)
+            </p>
+          ) : null}
+          <p className="whitespace-pre-wrap break-words">{body || message.content}</p>
           <p className="mt-1 text-[10px] opacity-70">{formatTime(message.createdAt)}</p>
         </div>
       </div>

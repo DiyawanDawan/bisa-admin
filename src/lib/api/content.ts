@@ -15,9 +15,14 @@ export async function fetchArticles(params?: {
   const qs = query.toString();
   const res = await apiGet<ArticleItem[]>(`/articles${qs ? `?${qs}` : ""}`);
   return {
-    items: res.data,
-    total: res.pagination?.total ?? res.data.length,
+    items: res.data ?? [],
+    total: res.pagination?.total ?? (res.data?.length ?? 0),
   };
+}
+
+export async function fetchArticle(id: string): Promise<ArticleItem> {
+  const res = await apiGet<ArticleItem>(`/articles/${id}`);
+  return res.data;
 }
 
 export async function createArticle(payload: {

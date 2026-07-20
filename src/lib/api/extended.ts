@@ -252,12 +252,14 @@ export async function fetchChatInbox(params?: {
   limit?: number;
   search?: string;
   status?: string;
+  scope?: "negotiation" | "dispute";
 }): Promise<{ items: ChatInboxItem[]; total: number }> {
   const query = new URLSearchParams();
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.search) query.set("search", params.search);
   if (params?.status) query.set("status", params.status);
+  if (params?.scope) query.set("scope", params.scope);
   const qs = query.toString();
   const res = await apiGet<ChatInboxItem[]>(`/admin/chat${qs ? `?${qs}` : ""}`);
   return {

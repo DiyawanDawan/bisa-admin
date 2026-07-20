@@ -222,6 +222,14 @@ export interface MarketTrendItem {
 
 export type MarketCategoryFilter = "" | "CARBON" | "BIOMASSA" | "LOGISTICS";
 
+export interface ChatStats {
+  totalRooms: number;
+  totalMessages: number;
+  activeRooms: number;
+  openNegotiations: number;
+  disputeGroups?: number;
+}
+
 export interface ChatInboxItem {
   id: string;
   status: string;
@@ -231,7 +239,16 @@ export interface ChatInboxItem {
   buyer: { id: string; fullName: string; email: string; avatarUrl?: string | null };
   seller: { id: string; fullName: string; email: string; avatarUrl?: string | null };
   product: { id: string; name: string };
-  order: { id: string; orderNumber: string; status: string } | null;
+  order: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    dispute?: {
+      mediationStartedAt?: string | null;
+      readyToResolveAt?: string | null;
+      status?: string;
+    } | null;
+  } | null;
   _count: { messages: number };
   lastMessage: {
     id: string;
@@ -240,6 +257,9 @@ export interface ChatInboxItem {
     isSystemMessage: boolean;
     sender: { id: string; fullName: string; role: string };
   } | null;
+  isDisputeMediation?: boolean;
+  mediationStartedAt?: string | null;
+  readyToResolveAt?: string | null;
 }
 
 export interface ChatMessageItem {
@@ -290,13 +310,6 @@ export interface ChatThreadData {
   };
   messages: ChatMessageItem[];
   pagination: { total: number; page: number; limit: number; totalPages: number };
-}
-
-export interface ChatStats {
-  totalRooms: number;
-  totalMessages: number;
-  activeRooms: number;
-  openNegotiations: number;
 }
 
 export type CrmStage = "LEAD" | "PROSPECT" | "ACTIVE" | "VIP" | "AT_RISK";

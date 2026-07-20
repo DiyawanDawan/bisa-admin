@@ -16,6 +16,7 @@ const ROLE_LABELS: Record<string, string> = {
   SUPPLIER: "Supplier",
   BUYER: "Pembeli",
   ADMIN: "Admin",
+  COURIER: "Kurir",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -77,7 +78,7 @@ export default function UsersStatsPanel({ onRoleClick, onStatusClick }: Props) {
   }, [load]);
 
   const roleChart = useMemo(() => {
-    if (!data?.roles.length) {
+    if (!data?.roles?.length) {
       return { labels: [], series: [], raw: [] as { role: string; count: number }[] };
     }
     const sorted = [...data.roles].sort((a, b) => b.count - a.count);
@@ -89,7 +90,7 @@ export default function UsersStatsPanel({ onRoleClick, onStatusClick }: Props) {
   }, [data]);
 
   const statusChart = useMemo(() => {
-    if (!data?.statuses.length) {
+    if (!data?.statuses?.length) {
       return { labels: [], series: [], colors: [], raw: [] as { status: string; count: number }[] };
     }
     const sorted = [...data.statuses].sort((a, b) => b.count - a.count);
@@ -102,7 +103,7 @@ export default function UsersStatsPanel({ onRoleClick, onStatusClick }: Props) {
   }, [data]);
 
   const kycChart = useMemo(() => {
-    if (!data?.kyc.length) {
+    if (!data?.kyc?.length) {
       return { labels: [], series: [] };
     }
     const sorted = [...data.kyc].sort((a, b) => b.count - a.count);
@@ -113,12 +114,12 @@ export default function UsersStatsPanel({ onRoleClick, onStatusClick }: Props) {
   }, [data]);
 
   const dailyCategories = useMemo(
-    () => data?.dailySignups.map((p) => formatDayLabel(p.x)) ?? [],
+    () => data?.dailySignups?.map((p) => formatDayLabel(p.x)) ?? [],
     [data],
   );
 
   const monthlyCategories = useMemo(
-    () => data?.monthlySignups.map((p) => formatMonthLabel(p.x)) ?? [],
+    () => data?.monthlySignups?.map((p) => formatMonthLabel(p.x)) ?? [],
     [data],
   );
 

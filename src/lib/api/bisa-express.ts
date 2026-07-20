@@ -13,7 +13,7 @@ const BASE = "/admin/bisa-express";
 
 export async function fetchBisaExpressDashboard(): Promise<BisaExpressDashboard> {
   const res = await apiGet<BisaExpressDashboard>(`${BASE}/dashboard`);
-  return res.data;
+  return res.data ?? {};
 }
 
 export async function fetchBisaExpressShipments(params?: {
@@ -58,7 +58,7 @@ export async function overrideBisaExpressStatus(
 
 export async function fetchBisaExpressRates(): Promise<BisaExpressRateItem[]> {
   const res = await apiGet<BisaExpressRateItem[]>(`${BASE}/rates`);
-  return res.data;
+  return res.data ?? [];
 }
 
 export async function upsertBisaExpressRate(
@@ -86,12 +86,12 @@ export async function deleteBisaExpressRate(id: string): Promise<void> {
 
 export async function fetchBisaExpressCoverage(): Promise<BisaExpressCoverageItem[]> {
   const res = await apiGet<BisaExpressCoverageItem[]>(`${BASE}/coverage`);
-  return res.data;
+  return res.data ?? [];
 }
 
 export async function fetchBisaExpressServiceRules(): Promise<BisaExpressServiceRuleItem[]> {
   const res = await apiGet<BisaExpressServiceRuleItem[]>(`${BASE}/service-rules`);
-  return res.data;
+  return res.data ?? [];
 }
 
 export async function upsertBisaExpressServiceRule(
@@ -116,7 +116,7 @@ export async function deactivateBisaExpressServiceRule(id: string): Promise<void
 
 export async function fetchBisaExpressDrivers(): Promise<BisaExpressDriverItem[]> {
   const res = await apiGet<BisaExpressDriverItem[]>(`${BASE}/drivers`);
-  return res.data;
+  return res.data ?? [];
 }
 
 export async function createBisaExpressDriver(body: {
@@ -133,5 +133,5 @@ export async function createBisaExpressDriver(body: {
 
 export async function fetchBisaExpressHubs(): Promise<BisaExpressHubItem[]> {
   const res = await apiGet<BisaExpressHubItem[]>(`${BASE}/hubs`);
-  return res.data;
+  return res.data ?? [];
 }

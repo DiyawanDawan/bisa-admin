@@ -2,6 +2,11 @@
 
 import { useApexChartTheme } from "@/hooks/useApexChartTheme";
 import { buildAreaChartOptions } from "@/lib/apex-chart-presets";
+import {
+  asCategories,
+  hasPositiveChartData,
+  normalizeChartSeries,
+} from "@/lib/chart-data";
 import type { ApexOptions } from "apexcharts";
 import ReactApexChart from "@/components/charts/ReactApexChartClient";
 import { useMemo } from "react";
@@ -21,8 +26,7 @@ export type AdminAreaChartProps = {
 };
 
 function hasData(series: AreaSeries | AreaSeries[]): boolean {
-  const list = Array.isArray(series) ? series : [series];
-  return list.some((s) => s.data.some((v) => Number(v) > 0));
+  return hasPositiveChartData(normalizeChartSeries(series));
 }
 
 export default function AdminAreaChart({
@@ -37,15 +41,13 @@ export default function AdminAreaChart({
   extraOptions,
 }: AdminAreaChartProps) {
   const { baseChart } = useApexChartTheme();
+  const safeCategories = asCategories(categories);
 
-  const apexSeries = useMemo(() => {
-    const list = Array.isArray(series) ? series : [series];
-    return list.map((s) => ({ name: s.name, data: s.data }));
-  }, [series]);
+  const apexSeries = useMemo(() => normalizeChartSeries(series), [series]);
 
   const options: ApexOptions = useMemo(
     () =>
-      buildAreaChartOptions(baseChart, categories, {
+      buildAreaChartOptions(baseChart, safeCategories, {
         chart: { ...baseChart.chart, height },
         colors,
         yaxis: formatY
@@ -56,7 +58,7 @@ export default function AdminAreaChart({
           : undefined,
         ...extraOptions,
       }),
-    [baseChart, categories, height, colors, formatY, formatTooltipY, extraOptions],
+    [baseChart, safeCategories, height, colors, formatY, formatTooltipY, extraOptions],
   );
 
   if (loading) {

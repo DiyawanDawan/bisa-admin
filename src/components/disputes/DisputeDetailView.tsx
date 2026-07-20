@@ -2,7 +2,7 @@
 import Badge from "@/components/ui/badge/Badge";
 import ComponentCard from "@/components/common/ComponentCard";
 import AdminMediaImage from "@/components/common/AdminMediaImage";
-import DisputeMediationChat from "@/components/disputes/DisputeMediationChat";
+import DisputeMediationActions from "@/components/disputes/DisputeMediationActions";
 import ResolveDisputeForm from "@/components/disputes/ResolveDisputeForm";
 import { fetchDisputeDetail } from "@/lib/api/admin";
 import { resolveMediaUrl } from "@/lib/media-url";
@@ -233,27 +233,25 @@ export default function DisputeDetailView({ orderId }: { orderId: string }) {
       </div>
 
       <ComponentCard
-        title="Mediasi Chat (Hakim BISA)"
-        desc="Diskusikan masalah dengan pembeli dan supplier sebelum putus release/refund"
+        title="Grup Mediasi Sengketa"
+        desc="Buat grup 3 pihak — diskusi dilakukan di menu Chat → Grup Sengketa"
       >
         {!order.mediation?.mediationStartedAt && (
           <div className="mb-4 rounded-lg border-2 border-warning-300 bg-warning-50 px-4 py-3 dark:border-warning-700 dark:bg-warning-900/20">
             <p className="text-sm font-semibold text-warning-800 dark:text-warning-200 mb-2">
-              Mediasi belum dimulai!
+              Grup mediasi belum dibuat
             </p>
-            <p className="text-sm text-warning-700 dark:text-warning-300 mb-3">
-              Anda harus membuka chat group mediasi untuk bernegosiasi dengan pembeli dan penjual sebelum bisa memutuskan sengketa.
-            </p>
-            <p className="text-sm text-warning-700 dark:text-warning-300 font-medium">
-              Klik tombol &quot;Mulai Mediasi&quot; di bawah ini
+            <p className="text-sm text-warning-700 dark:text-warning-300">
+              Klik <strong>Buat Grup Mediasi Sengketa</strong>, lalu lanjutkan obrolan di halaman
+              Chat admin (tab Grup Sengketa).
             </p>
           </div>
         )}
-        <DisputeMediationChat
+        <DisputeMediationActions
           orderId={order.id}
           orderNumber={order.orderNumber}
           canMediate={order.status === "DISPUTED"}
-          initialMediation={order.mediation ?? undefined}
+          mediation={mediation}
           onMediationChange={setMediation}
         />
       </ComponentCard>

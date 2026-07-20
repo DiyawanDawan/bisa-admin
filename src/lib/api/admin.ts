@@ -52,7 +52,7 @@ export async function fetchRevenueChart(): Promise<RevenueChartData> {
 
 export async function fetchBiomassTrend(): Promise<ChartPoint[]> {
   const res = await apiGet<ChartPoint[]>("/admin/dashboard/biomass-trend");
-  return res.data;
+  return res.data ?? [];
 }
 
 export async function fetchUserAnalytics(): Promise<UserAnalyticsData> {
@@ -221,8 +221,8 @@ export async function fetchUsers(params?: {
   );
 
   return {
-    items: res.data,
-    total: res.pagination?.total ?? res.data.length,
+    items: res.data ?? [],
+    total: res.pagination?.total ?? (res.data?.length ?? 0),
     page: res.pagination?.page ?? 1,
     limit: res.pagination?.limit ?? 10,
   };

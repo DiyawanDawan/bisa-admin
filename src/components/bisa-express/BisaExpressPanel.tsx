@@ -390,14 +390,14 @@ export default function BisaExpressPanel() {
     try {
       const res = await fetchUsers({ search: q, limit: 20, page: 1 });
       setUserHits(
-        res.items.map((u) => ({
+        (res.items ?? []).map((u) => ({
           id: u.id,
           fullName: u.fullName,
           email: u.email,
           role: u.role,
         })),
       );
-      if (res.items.length === 0) setDriverMsg("User tidak ditemukan");
+      if ((res.items ?? []).length === 0) setDriverMsg("User tidak ditemukan");
     } catch (e) {
       setDriverMsg(e instanceof ApiError ? e.message : "Gagal cari user");
     } finally {

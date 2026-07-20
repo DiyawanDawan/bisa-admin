@@ -6,8 +6,8 @@ export default function ChatPage() {
   return (
     <div>
       <PageBreadcrumb
-        pageTitle="Chat negosiasi"
-        description="Chat negosiasi akun Anda sebagai pembeli atau supplier — bukan akses ke chat pengguna lain"
+        pageTitle="Chat"
+        description="Negosiasi akun Anda atau grup mediasi sengketa (Hakim BISA)"
       />
       <Suspense
         fallback={

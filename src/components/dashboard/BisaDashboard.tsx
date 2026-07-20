@@ -114,35 +114,55 @@ export default function BisaDashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    try {
-      const [s, rev, bio, usr, cat, sup, ord, plat, gallery, integ] = await Promise.all([
-        fetchDashboardStats(),
-        fetchRevenueChart(),
-        fetchBiomassTrend(),
-        fetchUserAnalytics(),
-        fetchCategoryAnalytics(),
-        fetchTopSuppliers(),
-        fetchOrderAnalytics().catch(() => null),
-        fetchDashboardPlatformAnalytics().catch(() => null),
-        fetchDashboardVisualGallery().catch(() => null),
-        fetchIntegrationHealth().catch(() => null),
-      ]);
-      setStats(s);
-      setRevenue(rev);
-      setBiomass(bio);
-      setUsers(usr);
-      setCategories(cat);
-      setSuppliers(sup);
-      setOrders(ord);
-      setPlatform(plat);
-      setVisualGallery(gallery);
-      setIntegrationHealth(integ);
-      setUpdatedAt(new Date());
-    } catch {
-      setError("Gagal memuat data dashboard. Periksa koneksi API dan sesi login.");
-    } finally {
-      setLoading(false);
+    const [
+      statsR,
+      revR,
+      bioR,
+      usrR,
+      catR,
+      supR,
+      ordR,
+      platR,
+      galleryR,
+      integR,
+    ] = await Promise.allSettled([
+      fetchDashboardStats(),
+      fetchRevenueChart(),
+      fetchBiomassTrend(),
+      fetchUserAnalytics(),
+      fetchCategoryAnalytics(),
+      fetchTopSuppliers(),
+      fetchOrderAnalytics(),
+      fetchDashboardPlatformAnalytics(),
+      fetchDashboardVisualGallery(),
+      fetchIntegrationHealth(),
+    ]);
+
+    const failed: string[] = [];
+    const read = <T,>(result: PromiseSettledResult<T>, label: string, fallback: T): T => {
+      if (result.status === "fulfilled") return result.value;
+      failed.push(label);
+      return fallback;
+    };
+
+    setStats(read(statsR, "statistik", null));
+    setRevenue(read(revR, "pendapatan", null));
+    setBiomass(read(bioR, "biomassa", []));
+    setUsers(read(usrR, "pengguna", null));
+    setCategories(read(catR, "kategori", null));
+    setSuppliers(read(supR, "supplier", null));
+    setOrders(read(ordR, "order", null));
+    setPlatform(read(platR, "platform", null));
+    setVisualGallery(read(galleryR, "galeri", null));
+    setIntegrationHealth(read(integR, "health", null));
+    setUpdatedAt(new Date());
+
+    if (failed.length > 0) {
+      setError(
+        `Beberapa data gagal dimuat (${failed.join(", ")}). Periksa koneksi API, sesi login, dan migrasi backend.`,
+      );
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -165,7 +185,7 @@ export default function BisaDashboard() {
   const userSeries = users?.roles.series ?? [];
 
   const statusChart = useMemo(() => {
-    if (!orders?.byStatus.length) {
+    if (!orders?.byStatus?.length) {
       return { labels: [] as string[], series: [] as number[] };
     }
     const sorted = [...orders.byStatus].sort((a, b) => b.count - a.count);
@@ -177,7 +197,7 @@ export default function BisaDashboard() {
 
   const dailyOrderCategories = useMemo(
     () =>
-      orders?.dailyOrders.map((p) => {
+      orders?.dailyOrders?.map((p) => {
         const d = new Date(p.x + "T12:00:00");
         return Number.isNaN(d.getTime())
           ? p.x
@@ -199,7 +219,7 @@ export default function BisaDashboard() {
   ];
 
   const productStatusChart = useMemo(() => {
-    if (!platform?.productsByStatus.length) {
+    if (!platform?.productsByStatus?.length) {
       return { labels: [] as string[], series: [] as number[] };
     }
     const sorted = [...platform.productsByStatus].sort((a, b) => b.count - a.count);
@@ -481,7 +501,7 @@ export default function BisaDashboard() {
                   categories={dailyOrderCategories}
                   series={{
                     name: "Order",
-                    data: orders?.dailyOrders.map((p) => p.y) ?? [],
+                    data: orders?.dailyOrders?.map((p) => p.y) ?? [],
                   }}
                   formatY={(v) => String(Math.round(v))}
                   loading={loading}

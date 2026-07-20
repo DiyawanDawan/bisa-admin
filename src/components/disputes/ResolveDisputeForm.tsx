@@ -64,10 +64,14 @@ export default function ResolveDisputeForm({
         <p className="font-semibold mb-2">Tombol penyelesaian belum tersedia</p>
         <p className="mb-2">Untuk menyelesaikan sengketa, ikuti langkah berikut:</p>
         <ol className="list-decimal ml-4 space-y-1">
-          <li>Scroll ke atas ke section <strong>Mediasi Chat (Hakim BISA)</strong></li>
-          <li>Klik <strong>Mulai Mediasi</strong> agar pembeli, penjual, dan admin masuk satu chat</li>
-          <li>Diskusikan dengan kedua pihak (chat otomatis tersinkron tiap beberapa detik)</li>
-          <li>Setelah selesai, klik <strong>Tandai Siap Putus</strong></li>
+          <li>
+            Di section <strong>Grup Mediasi Sengketa</strong>, klik{" "}
+            <strong>Buat Grup Mediasi Sengketa</strong>
+          </li>
+          <li>
+            Buka <strong>Chat → Grup Sengketa</strong> untuk diskusi dengan pembeli &amp; penjual
+          </li>
+          <li>Setelah selesai, klik <strong>Tandai Siap Putus</strong> di halaman sengketa</li>
           <li>Kembali ke section ini untuk memilih Release atau Refund</li>
         </ol>
       </div>

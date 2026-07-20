@@ -2,6 +2,7 @@
 
 import { useApexChartTheme } from "@/hooks/useApexChartTheme";
 import { buildPieChartOptions } from "@/lib/apex-chart-presets";
+import { asArray } from "@/lib/chart-data";
 import type { ApexOptions } from "apexcharts";
 import ReactApexChart from "@/components/charts/ReactApexChartClient";
 import { useMemo } from "react";
@@ -24,15 +25,17 @@ export default function AdminPieChart({
   emptyMessage = "Belum ada data.",
 }: AdminPieChartProps) {
   const { baseChart } = useApexChartTheme();
+  const safeLabels = asArray(labels);
+  const safeSeries = asArray(series).map((v) => Number(v) || 0);
 
-  const hasData = series.length > 0 && series.some((v) => Number(v) > 0);
+  const hasData = safeSeries.length > 0 && safeSeries.some((v) => Number(v) > 0);
 
   const options: ApexOptions = useMemo(
     () => ({
-      ...buildPieChartOptions(baseChart, labels, colors),
+      ...buildPieChartOptions(baseChart, safeLabels, colors),
       chart: { ...baseChart.chart, height },
     }),
-    [baseChart, labels, colors, height],
+    [baseChart, safeLabels, colors, height],
   );
 
   if (loading) {
@@ -51,7 +54,7 @@ export default function AdminPieChart({
   return (
     <div className="max-w-full overflow-x-auto custom-scrollbar">
       <div className="mx-auto w-full max-w-sm">
-        <ReactApexChart options={options} series={series} type="pie" height={height} />
+        <ReactApexChart options={options} series={safeSeries} type="pie" height={height} />
       </div>
     </div>
   );
