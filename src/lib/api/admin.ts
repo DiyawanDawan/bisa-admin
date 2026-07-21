@@ -17,6 +17,8 @@ import type {
   PayoutStatus,
   PlatformFee,
   ProductListItem,
+  ProductCertificateItem,
+  ProductCertificateStatus,
   ProductStatus,
   RevenueChartData,
   ChartPoint,
@@ -361,6 +363,46 @@ export async function certifyProduct(
   isCertified: boolean,
 ): Promise<unknown> {
   const res = await apiPatch(`/admin/products/${productId}/certify`, { isCertified });
+  return res.data;
+}
+
+export async function fetchProductCertificates(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: ProductCertificateStatus;
+}): Promise<{ items: ProductCertificateItem[]; total: number; page: number; limit: number }> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.search) query.set("search", params.search);
+  if (params?.status) query.set("status", params.status);
+  const qs = query.toString();
+  const res = await apiGet<ProductCertificateItem[]>(
+    `/admin/products/certificates${qs ? `?${qs}` : ""}`,
+  );
+  return {
+    items: res.data,
+    total: res.pagination?.total ?? res.data.length,
+    page: res.pagination?.page ?? 1,
+    limit: res.pagination?.limit ?? 20,
+  };
+}
+
+export async function fetchProductCertificate(id: string): Promise<ProductCertificateItem> {
+  const res = await apiGet<ProductCertificateItem>(`/admin/products/certificates/${id}`);
+  return res.data;
+}
+
+export async function reviewProductCertificate(
+  id: string,
+  status: "APPROVED" | "REJECTED",
+  rejectionReason?: string,
+): Promise<ProductCertificateItem> {
+  const res = await apiPatch<ProductCertificateItem>(
+    `/admin/products/certificates/${id}/review`,
+    { status, rejectionReason },
+  );
   return res.data;
 }
 

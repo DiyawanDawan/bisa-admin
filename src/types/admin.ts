@@ -307,6 +307,34 @@ export interface ProductListItem {
   category?: { name: string } | null;
 }
 
+export type ProductCertificateStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface ProductCertificateItem {
+  id: string;
+  productId: string;
+  title: string;
+  certificateType: string;
+  issuerName?: string | null;
+  certificateNumber?: string | null;
+  issuedAt?: string | null;
+  expiresAt?: string | null;
+  fileName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  status: ProductCertificateStatus;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
+  createdAt: string;
+  documentUrl?: string | null;
+  product: {
+    id: string;
+    name: string;
+    thumbnailUrl?: string | null;
+    user: { id: string; fullName: string; email: string };
+  };
+  reviewedBy?: { id: string; fullName: string } | null;
+}
+
 export interface CategoryItem {
   id: string;
   name: string;

@@ -62,6 +62,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Moderasi", path: "/products" },
       { name: "Kategori", path: "/products/categories" },
+      { name: "Sertifikasi", path: "/products/certificates" },
     ],
   },
   {
