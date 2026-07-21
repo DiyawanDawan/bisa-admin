@@ -26,7 +26,23 @@ import type { RegionAdminList, RegionItem } from "@/types/content";
 
 export async function fetchOrderAnalytics(): Promise<OrderAnalytics> {
   const res = await apiGet<OrderAnalytics>("/admin/orders/stats");
-  return res.data;
+  const data = res.data;
+  return {
+    summary: data?.summary ?? {
+      totalOrders: 0,
+      completedOrders: 0,
+      activeDisputes: 0,
+      inProgress: 0,
+      thisMonthOrders: 0,
+      completedGmv: 0,
+      thisMonthGmv: 0,
+    },
+    byStatus: Array.isArray(data?.byStatus) ? data.byStatus : [],
+    dailyOrders: Array.isArray(data?.dailyOrders) ? data.dailyOrders : [],
+    dailyRevenue: Array.isArray(data?.dailyRevenue) ? data.dailyRevenue : [],
+    monthlyOrders: Array.isArray(data?.monthlyOrders) ? data.monthlyOrders : [],
+    monthlyRevenue: Array.isArray(data?.monthlyRevenue) ? data.monthlyRevenue : [],
+  };
 }
 
 export async function fetchAdminOrders(params?: {
@@ -48,9 +64,10 @@ export async function fetchAdminOrders(params?: {
   const res = await apiGet<AdminOrderListItem[]>(
     `/admin/orders${qs ? `?${qs}` : ""}`,
   );
+  const items = Array.isArray(res.data) ? res.data : [];
   return {
-    items: res.data,
-    total: res.pagination?.total ?? res.data.length,
+    items,
+    total: res.pagination?.total ?? items.length,
   };
 }
 
@@ -273,11 +290,10 @@ export async function fetchChatThread(
   params?: { page?: number; limit?: number },
 ): Promise<ChatThreadData> {
   const query = new URLSearchParams();
-  if (params?.page) query.set("page", String(params.page));
-  if (params?.limit) query.set("limit", String(params.limit));
-  const qs = query.toString();
+  query.set("page", String(params?.page ?? 1));
+  query.set("limit", String(params?.limit ?? 50));
   const res = await apiGet<ChatThreadData>(
-    `/admin/chat/${negotiationId}${qs ? `?${qs}` : ""}`,
+    `/admin/chat/${negotiationId}?${query.toString()}`,
   );
   return res.data;
 }

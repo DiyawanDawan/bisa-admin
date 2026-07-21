@@ -41,8 +41,8 @@ export async function updateArticle(
   payload: Partial<{
     title: string;
     content: string;
-    categoryId: string;
-    imageUrl: string;
+    categoryId: string | null;
+    imageUrl: string | null;
     status: PostStatus;
   }>,
 ): Promise<ArticleItem> {

@@ -145,6 +145,8 @@ export default function UsersStatsPanel({ onRoleClick, onStatusClick }: Props) {
   }
 
   const { summary } = data;
+  const dailySignups = data.dailySignups ?? [];
+  const monthlySignups = data.monthlySignups ?? [];
   const emailVerifiedPct =
     summary.totalUsers > 0
       ? Math.round((summary.emailVerified / summary.totalUsers) * 100)
@@ -269,7 +271,7 @@ export default function UsersStatsPanel({ onRoleClick, onStatusClick }: Props) {
         <ComponentCard title="Pendaftaran harian" desc="30 hari terakhir">
           <AdminAreaChart
             categories={dailyCategories}
-            series={{ name: "Pendaftar", data: data.dailySignups.map((p) => p.y) }}
+            series={{ name: "Pendaftar", data: dailySignups.map((p) => p.y) }}
           />
         </ComponentCard>
         <ComponentCard title="Status akun" desc="Bar horizontal">
@@ -290,7 +292,7 @@ export default function UsersStatsPanel({ onRoleClick, onStatusClick }: Props) {
       <ComponentCard title="Pendaftaran per bulan" desc="12 bulan terakhir">
         <AdminBarChart
           categories={monthlyCategories}
-          series={{ name: "Pendaftar", data: data.monthlySignups.map((p) => p.y) }}
+          series={{ name: "Pendaftar", data: monthlySignups.map((p) => p.y) }}
           height={260}
           colors={["#0ea5e9"]}
         />

@@ -4,6 +4,7 @@ import AdminMetricCard from "@/components/common/AdminMetricCard";
 import AdminSegmentTabs from "@/components/common/AdminSegmentTabs";
 import AdminDonutChart from "@/components/charts/donut/AdminDonutChart";
 import ComponentCard from "@/components/common/ComponentCard";
+import UserAvatar from "@/components/common/UserAvatar";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import Badge from "@/components/ui/badge/Badge";
@@ -21,6 +22,7 @@ import Pagination from "@/components/tables/Pagination";
 import {
   approvePayout,
   createFee,
+  deleteFee,
   exportFinanceReport,
   fetchFees,
   fetchFinanceStats,
@@ -134,6 +136,8 @@ export default function FinancePanel() {
   const [feeAmount, setFeeAmount] = useState("");
   const [feeDescription, setFeeDescription] = useState("");
   const [creatingFee, setCreatingFee] = useState(false);
+  const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
+  const [feeActionId, setFeeActionId] = useState<string | null>(null);
   const [payoutActionId, setPayoutActionId] = useState<string | null>(null);
 
   const pendingPayouts = useMemo(
@@ -242,12 +246,34 @@ export default function FinancePanel() {
   );
 
   async function handleFeeUpdate(fee: PlatformFee, isActive: boolean) {
+    setFeeActionId(fee.id);
     try {
       await updateFee(fee.id, { isActive });
       setFees(await fetchFees());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memperbarui biaya.");
+    } finally {
+      setFeeActionId(null);
     }
+  }
+
+  function resetFeeForm() {
+    setEditingFeeId(null);
+    setFeeName("TRANSACTION_FEE");
+    setFeeCalcType("PERCENTAGE");
+    setFeeAmount("");
+    setFeeDescription("");
+    setShowFeeForm(false);
+  }
+
+  function startFeeEdit(fee: PlatformFee) {
+    setEditingFeeId(fee.id);
+    setFeeName(fee.name as (typeof FEE_TYPES)[number]);
+    setFeeCalcType(fee.type as "PERCENTAGE" | "FIXED");
+    setFeeAmount(String(fee.amount));
+    setFeeDescription(fee.description ?? "");
+    setShowFeeForm(true);
+    setError(null);
   }
 
   async function handleCreateFee(e: React.FormEvent) {
@@ -260,21 +286,48 @@ export default function FinancePanel() {
     setCreatingFee(true);
     setError(null);
     try {
-      await createFee({
-        name: feeName,
-        amount,
-        type: feeCalcType,
-        description: feeDescription.trim() || undefined,
-        isActive: true,
-      });
-      setFeeAmount("");
-      setFeeDescription("");
-      setShowFeeForm(false);
+      if (editingFeeId) {
+        await updateFee(editingFeeId, {
+          amount,
+          type: feeCalcType,
+          description: feeDescription.trim() || null,
+        });
+      } else {
+        await createFee({
+          name: feeName,
+          amount,
+          type: feeCalcType,
+          description: feeDescription.trim() || undefined,
+          isActive: true,
+        });
+      }
+      resetFeeForm();
       setFees(await fetchFees());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menambah biaya.");
+      setError(err instanceof Error ? err.message : "Gagal menyimpan biaya.");
     } finally {
       setCreatingFee(false);
+    }
+  }
+
+  async function handleFeeDelete(fee: PlatformFee) {
+    if (fee.isActive) {
+      setError("Nonaktifkan biaya sebelum menghapusnya.");
+      return;
+    }
+    if (!confirm(`Hapus ${FEE_TYPE_LABELS[fee.name as (typeof FEE_TYPES)[number]] ?? fee.name}?`)) {
+      return;
+    }
+    setFeeActionId(fee.id);
+    setError(null);
+    try {
+      await deleteFee(fee.id);
+      if (editingFeeId === fee.id) resetFeeForm();
+      setFees(await fetchFees());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menghapus biaya.");
+    } finally {
+      setFeeActionId(null);
     }
   }
 
@@ -586,12 +639,23 @@ export default function FinancePanel() {
                 {transactions.map((tx) => (
                   <TableRow key={tx.id}>
                     <TableCell className="px-4 py-3 text-sm">
-                      {tx.user?.fullName ?? "—"}
-                      {tx.order?.orderNumber && (
-                        <span className="block text-theme-xs text-gray-400">
-                          Order {tx.order.orderNumber}
-                        </span>
-                      )}
+                      <div className="flex min-w-0 items-center gap-3">
+                        <UserAvatar
+                          src={tx.user?.avatarUrl}
+                          name={tx.user?.fullName ?? "User"}
+                          className="h-9 w-9"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-gray-800 dark:text-white/90">
+                            {tx.user?.fullName ?? "—"}
+                          </p>
+                          {tx.order?.orderNumber && (
+                            <span className="block truncate text-theme-xs text-gray-400">
+                              Order {tx.order.orderNumber}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm text-gray-500">{tx.type}</TableCell>
                     <TableCell className="px-4 py-3 text-sm font-medium">
@@ -627,7 +691,14 @@ export default function FinancePanel() {
             <p className="text-sm text-gray-500">
               Biaya diterapkan saat checkout / withdraw (persentase atau nominal tetap).
             </p>
-            <Button size="sm" variant="outline" onClick={() => setShowFeeForm((v) => !v)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (showFeeForm) resetFeeForm();
+                else setShowFeeForm(true);
+              }}
+            >
               {showFeeForm ? "Tutup form" : "+ Tambah biaya"}
             </Button>
           </div>
@@ -644,9 +715,14 @@ export default function FinancePanel() {
                     value={feeName}
                     onChange={(e) => setFeeName(e.target.value as (typeof FEE_TYPES)[number])}
                     className={selectClass}
+                    disabled={editingFeeId !== null}
                   >
                     {FEE_TYPES.map((t) => (
-                      <option key={t} value={t}>
+                      <option
+                        key={t}
+                        value={t}
+                        disabled={!editingFeeId && fees.some((fee) => fee.name === t)}
+                      >
                         {FEE_TYPE_LABELS[t]}
                       </option>
                     ))}
@@ -681,9 +757,20 @@ export default function FinancePanel() {
                   />
                 </div>
               </div>
-              <Button type="submit" size="sm" className="mt-4" disabled={creatingFee || !feeAmount}>
-                {creatingFee ? "Menyimpan..." : "Simpan biaya"}
-              </Button>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button type="submit" size="sm" disabled={creatingFee || !feeAmount}>
+                  {creatingFee
+                    ? "Menyimpan..."
+                    : editingFeeId
+                      ? "Simpan perubahan"
+                      : "Simpan biaya"}
+                </Button>
+                {editingFeeId && (
+                  <Button type="button" size="sm" variant="outline" onClick={resetFeeForm}>
+                    Batal edit
+                  </Button>
+                )}
+              </div>
             </form>
           )}
 
@@ -713,7 +800,12 @@ export default function FinancePanel() {
                 {fees.map((fee) => (
                   <TableRow key={fee.id}>
                     <TableCell className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                      {FEE_TYPE_LABELS[fee.name as (typeof FEE_TYPES)[number]] ?? fee.name}
+                      <p>{FEE_TYPE_LABELS[fee.name as (typeof FEE_TYPES)[number]] ?? fee.name}</p>
+                      {fee.description && (
+                        <p className="mt-0.5 text-theme-xs font-normal text-gray-500">
+                          {fee.description}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm font-semibold text-brand-700 dark:text-brand-400">
                       {formatFeeValue(fee)}
@@ -724,13 +816,33 @@ export default function FinancePanel() {
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-end">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleFeeUpdate(fee, !fee.isActive)}
-                      >
-                        {fee.isActive ? "Matikan" : "Aktifkan"}
-                      </Button>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startFeeEdit(fee)}
+                          disabled={feeActionId === fee.id}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleFeeUpdate(fee, !fee.isActive)}
+                          disabled={feeActionId === fee.id}
+                        >
+                          {fee.isActive ? "Matikan" : "Aktifkan"}
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => handleFeeDelete(fee)}
+                          disabled={fee.isActive || feeActionId === fee.id}
+                          className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-error-600 hover:bg-error-50 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-error-500/10"
+                          title={fee.isActive ? "Nonaktifkan terlebih dahulu" : "Hapus biaya"}
+                        >
+                          Hapus
+                        </button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -460,7 +460,7 @@ export default function ForumModeration() {
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
         <div className="xl:col-span-3">
-          <ComponentCard title="Daftar postingan" desc="Klik Detail untuk avatar, banner, media">
+          <ComponentCard title="Daftar postingan" desc="Avatar penulis, media, dan detail grup">
             {loading ? (
               <div className="h-40 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
             ) : items.length === 0 ? (
@@ -488,6 +488,7 @@ export default function ForumModeration() {
                     <TableBody>
                       {items.map((p) => {
                         const media = mediaList(p.mediaUrls);
+                        const authorName = p.user?.fullName ?? "Penulis";
                         return (
                           <TableRow key={p.id}>
                             <TableCell className="max-w-sm px-4 py-3">
@@ -497,21 +498,28 @@ export default function ForumModeration() {
                                     src={media[0].url}
                                     alt={p.title}
                                     className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                                    fallback={
+                                      <UserAvatar
+                                        src={p.user?.avatarUrl}
+                                        name={authorName}
+                                        className="h-12 w-12"
+                                      />
+                                    }
                                   />
-                                ) : p.group?.avatarUrl ? (
+                                ) : (
                                   <UserAvatar
-                                    src={p.group.avatarUrl}
-                                    name={p.group.name}
+                                    src={p.user?.avatarUrl ?? p.group?.avatarUrl}
+                                    name={authorName}
                                     className="h-12 w-12"
                                   />
-                                ) : null}
+                                )}
                                 <div className="min-w-0">
                                   <p className="truncate text-sm font-medium">{p.title}</p>
                                   <p className="line-clamp-2 text-theme-xs text-gray-500">
                                     {contentPreview(p.content)}
                                   </p>
                                   <p className="mt-0.5 text-theme-xs text-gray-400">
-                                    {p._count.comments} komentar · {p.viewCount} view
+                                    {p._count?.comments ?? 0} komentar · {p.viewCount ?? 0} view
                                     {p.group ? ` · ${p.group.name}` : ""}
                                     {media.length > 0 ? ` · ${media.length} media` : ""}
                                   </p>
@@ -519,16 +527,18 @@ export default function ForumModeration() {
                               </div>
                             </TableCell>
                             <TableCell className="px-4 py-3">
-                              <div className="flex items-center gap-2">
+                              <div className="flex min-w-0 items-center gap-2">
                                 <UserAvatar
-                                  src={p.user.avatarUrl}
-                                  name={p.user.fullName}
-                                  className="h-8 w-8"
+                                  src={p.user?.avatarUrl}
+                                  name={authorName}
+                                  className="h-9 w-9"
                                 />
                                 <div className="min-w-0">
-                                  <p className="truncate text-sm">{p.user.fullName}</p>
+                                  <p className="truncate text-sm font-medium text-gray-800 dark:text-white/90">
+                                    {authorName}
+                                  </p>
                                   <p className="truncate text-theme-xs text-gray-400">
-                                    {p.user.role}
+                                    {p.user?.role ?? "—"}
                                   </p>
                                 </div>
                               </div>

@@ -19,11 +19,12 @@ import {
   updateArticle,
 } from "@/lib/api/content";
 import { fetchCategories } from "@/lib/api/admin";
-import { resolveMediaUrl } from "@/lib/media-url";
+import { uploadFileChunked } from "@/lib/chunked-media-upload";
 import type { CategoryItem } from "@/types/admin";
 import type { ArticleItem, PostStatus } from "@/types/content";
 import { formatDate } from "@/lib/format";
 import { useCallback, useEffect, useState } from "react";
+import { useDropzone } from "react-dropzone";
 
 const STATUSES: PostStatus[] = ["PUBLISHED", "DRAFT", "ARCHIVED"];
 
@@ -35,10 +36,13 @@ export default function ArticlesManager() {
   const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  /** Path storage hasil chunked upload (bukan URL eksternal). */
+  const [imagePath, setImagePath] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState("");
   const [status, setStatus] = useState<PostStatus>("DRAFT");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [detailArticle, setDetailArticle] = useState<ArticleItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -67,19 +71,50 @@ export default function ArticlesManager() {
     setEditId(null);
     setTitle("");
     setContent("");
-    setImageUrl("");
+    setImagePath(null);
     setCategoryId("");
     setStatus("DRAFT");
+    setUploadProgress(0);
   }
 
   function startEdit(article: ArticleItem) {
     setEditId(article.id);
     setTitle(article.title);
     setContent(article.content);
-    setImageUrl(article.imageUrl ?? "");
+    setImagePath(article.imageUrl ?? null);
     setCategoryId(article.categoryId ?? "");
     setStatus(article.status);
   }
+
+  const onDropCover = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    setUploadProgress(0);
+    try {
+      const result = await uploadFileChunked(file, "articles", (p) =>
+        setUploadProgress(Math.round(p * 100)),
+      );
+      setImagePath(result.path);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload gambar gagal.");
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: onDropCover,
+    disabled: uploading || saving,
+    multiple: false,
+    maxFiles: 1,
+    accept: {
+      "image/png": [],
+      "image/jpeg": [],
+      "image/webp": [],
+    },
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,17 +125,22 @@ export default function ArticlesManager() {
     setSaving(true);
     setError(null);
     try {
-      const payload = {
-        title,
-        content,
-        status,
-        ...(imageUrl.trim() ? { imageUrl: imageUrl.trim() } : {}),
-        ...(categoryId ? { categoryId } : {}),
-      };
       if (editId) {
-        await updateArticle(editId, payload);
+        await updateArticle(editId, {
+          title,
+          content,
+          status,
+          imageUrl: imagePath,
+          categoryId: categoryId || null,
+        });
       } else {
-        await createArticle(payload);
+        await createArticle({
+          title,
+          content,
+          status,
+          ...(imagePath ? { imageUrl: imagePath } : {}),
+          ...(categoryId ? { categoryId } : {}),
+        });
       }
       resetForm();
       await load();
@@ -156,7 +196,7 @@ export default function ArticlesManager() {
 
       <ComponentCard
         title={editId ? "Edit artikel" : "Artikel baru"}
-        desc="Blog / konten edukasi untuk aplikasi mobile"
+        desc="Cover diunggah via multipart chunked ke storage — bukan URL eksternal"
       >
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
@@ -207,17 +247,74 @@ export default function ArticlesManager() {
               ))}
             </select>
           </div>
+
           <div className="md:col-span-2">
-            <label className="mb-1 block text-theme-xs text-gray-500">URL gambar (opsional)</label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
-            />
+            <label className="mb-1 block text-theme-xs text-gray-500">
+              Gambar cover (opsional)
+            </label>
+            {imagePath ? (
+              <div className="flex flex-wrap items-start gap-4 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+                <AdminMediaImage
+                  src={imagePath}
+                  alt="Cover artikel"
+                  className="h-28 w-40 rounded-lg object-cover"
+                />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <p className="truncate text-theme-xs text-gray-500">{imagePath}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={uploading}
+                      onClick={() => setImagePath(null)}
+                    >
+                      Hapus cover
+                    </Button>
+                    <div
+                      {...getRootProps()}
+                      className="inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-brand-600 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/[0.03]"
+                    >
+                      <input {...getInputProps()} />
+                      Ganti gambar
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                {...getRootProps()}
+                className={`cursor-pointer rounded-xl border border-dashed px-4 py-8 text-center transition ${
+                  isDragActive
+                    ? "border-brand-500 bg-brand-50/50 dark:bg-brand-500/10"
+                    : "border-gray-300 bg-gray-50 hover:border-brand-400 dark:border-gray-700 dark:bg-gray-900"
+                } ${uploading ? "pointer-events-none opacity-60" : ""}`}
+              >
+                <input {...getInputProps()} />
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {uploading
+                    ? `Mengunggah… ${uploadProgress}%`
+                    : isDragActive
+                      ? "Lepaskan gambar di sini"
+                      : "Seret & lepas gambar, atau klik untuk pilih"}
+                </p>
+                <p className="mt-1 text-theme-xs text-gray-500">
+                  PNG, JPG, WebP — upload multipart chunked ke folder articles/
+                </p>
+                {uploading && (
+                  <div className="mx-auto mt-3 h-2 max-w-xs overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+                    <div
+                      className="h-full rounded-full bg-brand-500 transition-all"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
           <div className="flex gap-2 md:col-span-2">
-            <Button type="submit" size="sm" disabled={saving}>
+            <Button type="submit" size="sm" disabled={saving || uploading}>
               {saving ? "Menyimpan..." : editId ? "Perbarui" : "Publikasikan"}
             </Button>
             {editId && (
@@ -237,7 +334,7 @@ export default function ArticlesManager() {
             <TableHeader>
               <TableRow>
                 <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
-                  Judul
+                  Artikel
                 </TableCell>
                 <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
                   Status
@@ -264,9 +361,22 @@ export default function ArticlesManager() {
                       <button
                         type="button"
                         onClick={() => void openDetail(a)}
-                        className="text-left text-brand-700 hover:underline dark:text-brand-400"
+                        className="flex min-w-0 items-center gap-3 text-left"
                       >
-                        {a.title}
+                        {a.imageUrl ? (
+                          <AdminMediaImage
+                            src={a.imageUrl}
+                            alt={a.title}
+                            className="h-10 w-14 shrink-0 rounded-md object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md bg-gray-100 text-[10px] text-gray-400 dark:bg-gray-800">
+                            —
+                          </span>
+                        )}
+                        <span className="truncate text-brand-700 hover:underline dark:text-brand-400">
+                          {a.title}
+                        </span>
                       </button>
                     </TableCell>
                     <TableCell className="px-4 py-3">
@@ -345,21 +455,6 @@ export default function ArticlesManager() {
                     <div>
                       <dt className="text-gray-500">Dipublikasikan</dt>
                       <dd>{formatDate(detailArticle.publishedAt)}</dd>
-                    </div>
-                  ) : null}
-                  {detailArticle.imageUrl ? (
-                    <div className="sm:col-span-2">
-                      <dt className="text-gray-500">URL gambar</dt>
-                      <dd className="break-all">
-                        <a
-                          href={resolveMediaUrl(detailArticle.imageUrl) ?? detailArticle.imageUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-brand-600 hover:underline dark:text-brand-400"
-                        >
-                          {detailArticle.imageUrl}
-                        </a>
-                      </dd>
                     </div>
                   ) : null}
                 </dl>

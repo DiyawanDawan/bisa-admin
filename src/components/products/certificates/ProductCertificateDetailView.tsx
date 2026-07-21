@@ -33,7 +33,7 @@ export default function ProductCertificateDetailView({ id }: { id: string }) {
     setError(null);
     try {
       const updated = await reviewProductCertificate(id, status, reason.trim() || undefined);
-      setItem((current) => (current ? { ...current, ...updated } : current));
+      setItem(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan keputusan.");
     } finally {

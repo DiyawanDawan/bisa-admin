@@ -5,6 +5,8 @@ import type {
   NotificationAdminStats,
   CategoryItem,
   CategoryType,
+  BiomassaType,
+  ProductMode,
   DashboardStats,
   DisputeOrder,
   DisputeResolution,
@@ -16,8 +18,10 @@ import type {
   PayoutItem,
   PayoutStatus,
   PlatformFee,
+  ProductDetail,
   ProductListItem,
   ProductCertificateItem,
+  StoreCertificateItem,
   ProductCertificateStatus,
   ProductStatus,
   RevenueChartData,
@@ -38,7 +42,16 @@ import type {
   PartnershipListFilter,
   PartnershipStatus,
 } from "@/types/admin";
-import { apiDownload, apiGet, apiPatch, apiPost, apiPut, apiRequest } from "@/lib/api-client";
+import {
+  apiDelete,
+  apiDownload,
+  apiGet,
+  apiPatch,
+  apiPost,
+  apiPut,
+  apiRequest,
+} from "@/lib/api-client";
+import { invalidateAdminGetCache } from "@/lib/api-cache";
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const res = await apiGet<DashboardStats>("/admin/dashboard/stats");
@@ -64,7 +77,27 @@ export async function fetchUserAnalytics(): Promise<UserAnalyticsData> {
 
 export async function fetchUserAnalyticsStats(): Promise<UserAnalyticsStats> {
   const res = await apiGet<UserAnalyticsStats>("/admin/users/stats");
-  return res.data;
+  const data = res.data;
+  return {
+    summary: data?.summary ?? {
+      totalUsers: 0,
+      activeUsers: 0,
+      blockedUsers: 0,
+      suppliers: 0,
+      buyers: 0,
+      admins: 0,
+      pendingKyc: 0,
+      verifiedKyc: 0,
+      rejectedKyc: 0,
+      thisMonthUsers: 0,
+      emailVerified: 0,
+    },
+    roles: Array.isArray(data?.roles) ? data.roles : [],
+    statuses: Array.isArray(data?.statuses) ? data.statuses : [],
+    kyc: Array.isArray(data?.kyc) ? data.kyc : [],
+    dailySignups: Array.isArray(data?.dailySignups) ? data.dailySignups : [],
+    monthlySignups: Array.isArray(data?.monthlySignups) ? data.monthlySignups : [],
+  };
 }
 
 export async function fetchCategoryAnalytics(): Promise<DonutChartData> {
@@ -163,11 +196,10 @@ export async function fetchDisputeChat(
   params?: { page?: number; limit?: number },
 ): Promise<DisputeChatThread> {
   const query = new URLSearchParams();
-  if (params?.page) query.set("page", String(params.page));
-  if (params?.limit) query.set("limit", String(params.limit));
-  const qs = query.toString();
+  query.set("page", String(params?.page ?? 1));
+  query.set("limit", String(params?.limit ?? 50));
   const res = await apiGet<DisputeChatThread>(
-    `/admin/orders/disputes/${orderId}/chat${qs ? `?${qs}` : ""}`,
+    `/admin/orders/disputes/${orderId}/chat?${query.toString()}`,
   );
   return res.data;
 }
@@ -345,6 +377,11 @@ export async function fetchProducts(params?: {
   };
 }
 
+export async function fetchProductDetail(productId: string): Promise<ProductDetail> {
+  const res = await apiGet<ProductDetail>(`/admin/products/${productId}`);
+  return res.data;
+}
+
 export async function moderateProduct(
   productId: string,
   status: ProductStatus,
@@ -406,25 +443,93 @@ export async function reviewProductCertificate(
   return res.data;
 }
 
-export async function fetchCategories(): Promise<CategoryItem[]> {
-  const res = await apiGet<CategoryItem[]>("/admin/products/categories");
+export async function fetchProductCertificatesByProduct(
+  productId: string,
+): Promise<ProductCertificateItem[]> {
+  const res = await apiGet<ProductCertificateItem[]>(`/admin/products/${productId}/certificates`);
   return res.data;
+}
+
+export async function fetchStoreCertificates(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: ProductCertificateStatus;
+}): Promise<{ items: StoreCertificateItem[]; total: number; page: number; limit: number }> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.search) query.set("search", params.search);
+  if (params?.status) query.set("status", params.status);
+  const qs = query.toString();
+  const res = await apiGet<StoreCertificateItem[]>(
+    `/admin/products/store-certificates${qs ? `?${qs}` : ""}`,
+  );
+  return {
+    items: res.data,
+    total: res.pagination?.total ?? res.data.length,
+    page: res.pagination?.page ?? 1,
+    limit: res.pagination?.limit ?? 20,
+  };
+}
+
+export async function fetchStoreCertificate(id: string): Promise<StoreCertificateItem> {
+  const res = await apiGet<StoreCertificateItem>(`/admin/products/store-certificates/${id}`);
+  return res.data;
+}
+
+export async function reviewStoreCertificate(
+  id: string,
+  status: "APPROVED" | "REJECTED",
+  rejectionReason?: string,
+): Promise<StoreCertificateItem> {
+  const res = await apiPatch<StoreCertificateItem>(
+    `/admin/products/store-certificates/${id}/review`,
+    { status, rejectionReason },
+  );
+  return res.data;
+}
+
+export async function fetchCategories(params?: {
+  categoryType?: CategoryType;
+  productMode?: ProductMode;
+  biomassaType?: BiomassaType;
+  search?: string;
+}): Promise<CategoryItem[]> {
+  const query = new URLSearchParams();
+  if (params?.categoryType) query.set("categoryType", params.categoryType);
+  if (params?.productMode) query.set("productMode", params.productMode);
+  if (params?.biomassaType) query.set("biomassaType", params.biomassaType);
+  if (params?.search) query.set("search", params.search);
+  const qs = query.toString();
+  const res = await apiGet<CategoryItem[]>(
+    `/admin/products/categories${qs ? `?${qs}` : ""}`,
+  );
+  return res.data ?? [];
 }
 
 export async function createCategory(payload: {
   name: string;
   description?: string;
   categoryType: CategoryType;
-}): Promise<unknown> {
-  const res = await apiPost("/admin/products/categories", payload);
+  productMode?: ProductMode | null;
+  biomassaType?: BiomassaType | null;
+}): Promise<CategoryItem> {
+  const res = await apiPost<CategoryItem>("/admin/products/categories", payload);
   return res.data;
 }
 
 export async function updateCategory(
   id: string,
-  payload: { name: string; description?: string; categoryType: CategoryType },
-): Promise<unknown> {
-  const res = await apiPut(`/admin/products/categories/${id}`, payload);
+  payload: {
+    name: string;
+    description?: string;
+    categoryType: CategoryType;
+    productMode?: ProductMode | null;
+    biomassaType?: BiomassaType | null;
+  },
+): Promise<CategoryItem> {
+  const res = await apiPut<CategoryItem>(`/admin/products/categories/${id}`, payload);
   return res.data;
 }
 
@@ -462,7 +567,7 @@ export async function fetchTransactions(params?: {
 
 export async function fetchFees(): Promise<PlatformFee[]> {
   const res = await apiGet<PlatformFee[]>("/admin/finance/fees");
-  return res.data;
+  return res.data ?? [];
 }
 
 export async function createFee(payload: {
@@ -473,14 +578,27 @@ export async function createFee(payload: {
   isActive?: boolean;
 }): Promise<PlatformFee> {
   const res = await apiPost<PlatformFee>("/admin/finance/fees", payload);
+  invalidateAdminGetCache("/admin/finance/fees");
   return res.data;
 }
 
 export async function updateFee(
   id: string,
-  payload: { amount?: number; isActive?: boolean },
-): Promise<unknown> {
-  const res = await apiPatch(`/admin/finance/fees/${id}`, payload);
+  payload: {
+    amount?: number;
+    type?: string;
+    description?: string | null;
+    isActive?: boolean;
+  },
+): Promise<PlatformFee> {
+  const res = await apiPatch<PlatformFee>(`/admin/finance/fees/${id}`, payload);
+  invalidateAdminGetCache("/admin/finance/fees");
+  return res.data;
+}
+
+export async function deleteFee(id: string): Promise<PlatformFee> {
+  const res = await apiDelete<PlatformFee>(`/admin/finance/fees/${id}`);
+  invalidateAdminGetCache("/admin/finance/fees");
   return res.data;
 }
 

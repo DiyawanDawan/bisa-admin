@@ -3,12 +3,14 @@
 import ComponentCard from "@/components/common/ComponentCard";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
+import AdminMediaImage from "@/components/common/AdminMediaImage";
+import { uploadFileChunked } from "@/lib/chunked-media-upload";
 import {
   fetchPlatformSettingsAdmin,
   savePlatformSettingsAdmin,
 } from "@/lib/api/platform-settings";
 import type { PlatformSettingItem } from "@/types/platform-settings";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 function sourceLabel(source: PlatformSettingItem["source"]) {
   switch (source) {
@@ -39,6 +41,9 @@ export default function PlatformSettingsManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,6 +65,22 @@ export default function PlatformSettingsManager() {
 
   function updateValue(key: string, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleImageUpload(key: string, file: File) {
+    setUploadingKey(key);
+    setUploadProgress(0);
+    setError(null);
+    try {
+      const result = await uploadFileChunked(file, "branding", (p) =>
+        setUploadProgress(Math.round(p * 100)),
+      );
+      updateValue(key, result.path);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload logo gagal.");
+    } finally {
+      setUploadingKey(null);
+    }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -100,9 +121,10 @@ export default function PlatformSettingsManager() {
 
       <ComponentCard title="Pengaturan Platform BISA">
         <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-          Mengatur kontak CS, URL verifikasi QR tagihan, dan parameter pembayaran
-          Xendit. Setelah disimpan, nilai disimpan di database dan dipakai aplikasi
-          mobile serta halaman publik <code className="text-xs">/verify</code> dan{" "}
+          Mengatur logo aplikasi, kontak CS, URL verifikasi QR tagihan, dan
+          parameter pembayaran Xendit. Setelah disimpan, nilai disimpan di
+          database dan dipakai aplikasi mobile serta halaman publik{" "}
+          <code className="text-xs">/verify</code> dan{" "}
           <code className="text-xs">/track</code>.
         </p>
 
@@ -127,14 +149,76 @@ export default function PlatformSettingsManager() {
                 </span>
               </div>
               <p className="mb-3 text-theme-xs text-gray-500">{item.description}</p>
-              <input
-                id={item.key}
-                type={item.type === "number" ? "number" : "text"}
-                value={values[item.key] ?? ""}
-                onChange={(e) => updateValue(item.key, e.target.value)}
-                placeholder={item.placeholder}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-              />
+              {item.type === "image" ? (
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                    <AdminMediaImage
+                      src={values[item.key] || null}
+                      alt={item.label}
+                      className="h-24 w-24"
+                      fallback={
+                        <span className="px-2 text-center text-theme-xs text-gray-400">
+                          Belum ada logo
+                        </span>
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      ref={(el) => {
+                        fileInputs.current[item.key] = el;
+                      }}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void handleImageUpload(item.key, file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={uploadingKey === item.key || saving}
+                        onClick={() => fileInputs.current[item.key]?.click()}
+                      >
+                        {uploadingKey === item.key
+                          ? `Mengunggah… ${uploadProgress}%`
+                          : values[item.key]
+                            ? "Ganti logo"
+                            : "Unggah logo"}
+                      </Button>
+                      {values[item.key] ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={uploadingKey === item.key || saving}
+                          onClick={() => updateValue(item.key, "")}
+                        >
+                          Hapus
+                        </Button>
+                      ) : null}
+                    </div>
+                    <p className="text-theme-xs text-gray-400">
+                      PNG, JPG, atau WebP — diunggah multipart ke folder{" "}
+                      <code>branding/</code>.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <input
+                  id={item.key}
+                  type={item.type === "number" ? "number" : "text"}
+                  value={values[item.key] ?? ""}
+                  onChange={(e) => updateValue(item.key, e.target.value)}
+                  placeholder={item.placeholder}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                />
+              )}
             </div>
           ))}
 

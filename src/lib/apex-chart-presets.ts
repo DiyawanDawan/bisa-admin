@@ -31,7 +31,6 @@ export function buildDonutChartOptions(
   const valueColor = opts.isDark ? "#f9fafb" : "#101828";
 
   return {
-    ...baseChart,
     chart: { ...baseChart.chart, type: "donut" },
     colors: opts.colors ?? BISA_CHART_COLORS,
     labels: opts.labels,
@@ -62,7 +61,10 @@ export function buildDonutChartOptions(
               color: labelColor,
               fontSize: "12px",
               formatter: (w) => {
-                const sum = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
+                const totals = w?.globals?.seriesTotals;
+                const sum = Array.isArray(totals)
+                  ? totals.reduce((a: number, b: number) => a + b, 0)
+                  : 0;
                 return opts.formatTotal ? opts.formatTotal(sum) : String(sum);
               },
             },
@@ -70,8 +72,11 @@ export function buildDonutChartOptions(
         },
       },
     },
+    // Donut/pie tidak mendukung tooltip.shared — ApexCharts crash (.map/.length undefined).
     tooltip: {
-      ...baseChart.tooltip,
+      theme: baseChart.tooltip?.theme,
+      shared: false,
+      intersect: true,
       y: {
         formatter: (val: number) =>
           opts.formatValue ? opts.formatValue(val) : String(val),
@@ -87,12 +92,16 @@ export function buildPieChartOptions(
   colors?: string[],
 ): ApexOptions {
   return {
-    ...baseChart,
     chart: { ...baseChart.chart, type: "pie" },
     colors: colors ?? BISA_CHART_COLORS,
     labels,
     legend: { position: "bottom" },
     dataLabels: { enabled: false },
+    tooltip: {
+      theme: baseChart.tooltip?.theme,
+      shared: false,
+      intersect: true,
+    },
   };
 }
 

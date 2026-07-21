@@ -48,7 +48,6 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Daftar Pengguna", path: "/users" },
       { name: "Verifikasi KYC", path: "/users/verifications" },
-      { name: "Minta naik jilid", path: "/tier-requests" },
     ],
   },
   {

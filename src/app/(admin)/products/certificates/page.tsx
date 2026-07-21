@@ -3,13 +3,13 @@ import ProductCertificateQueue from "@/components/products/certificates/ProductC
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sertifikasi Produk | BISA Admin",
+  title: "Sertifikasi | BISA Admin",
 };
 
 export default function ProductCertificatesPage() {
   return (
     <div>
-      <PageBreadcrumb pageTitle="Sertifikasi Produk" />
+      <PageBreadcrumb pageTitle="Sertifikasi Produk & Toko" />
       <ProductCertificateQueue />
     </div>
   );

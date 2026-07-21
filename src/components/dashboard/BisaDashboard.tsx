@@ -251,24 +251,64 @@ export default function BisaDashboard() {
         </div>
       </AdminInfoBanner>
 
-      {error ? <Alert variant="error" title="Gagal memuat" message={error} /> : null}
+      {error ||
+      (stats && stats.activeDisputes > 0) ||
+      integrationHealth?.status === "NEEDS_ATTENTION" ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {error ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Muat data</p>
+                <Badge color="error" size="sm">
+                  Gagal
+                </Badge>
+              </div>
+              <p className="mt-1 text-base font-semibold text-gray-800 dark:text-white/90">
+                Galeri / API
+              </p>
+              <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">{error}</p>
+            </div>
+          ) : null}
 
-      {stats && stats.activeDisputes > 0 ? (
-        <Alert
-          variant="warning"
-          title={`${formatNumber(stats.activeDisputes)} sengketa aktif`}
-          message="Perlu peninjauan admin segera."
-          showLink
-          linkHref="/disputes"
-          linkText="Buka halaman sengketa"
-        />
-      ) : null}
-      {integrationHealth?.status === "NEEDS_ATTENTION" ? (
-        <Alert
-          variant="warning"
-          title="Health integrasi perlu perhatian"
-          message={`Pending >24j: ${integrationHealth.summary.pendingOver24h}, shipping meta kosong: ${integrationHealth.summary.missingShippingMeta}, payment gagal 7 hari: ${integrationHealth.summary.failedPayments7d}`}
-        />
+          {stats && stats.activeDisputes > 0 ? (
+            <Link
+              href="/disputes"
+              className="block rounded-2xl border border-gray-200 bg-white p-5 transition hover:opacity-90 dark:border-gray-800 dark:bg-white/[0.03]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Sengketa aktif</p>
+                <Badge color="warning" size="sm">
+                  Perlu tinjau
+                </Badge>
+              </div>
+              <p className="mt-1 text-2xl font-bold text-gray-800 dark:text-white/90">
+                {formatNumber(stats.activeDisputes)}
+              </p>
+              <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                Buka halaman sengketa →
+              </p>
+            </Link>
+          ) : null}
+
+          {integrationHealth?.status === "NEEDS_ATTENTION" ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Health integrasi</p>
+                <Badge color="warning" size="sm">
+                  Perhatian
+                </Badge>
+              </div>
+              <p className="mt-1 text-base font-semibold text-gray-800 dark:text-white/90">
+                Perlu perhatian
+              </p>
+              <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                Pending &gt;24j: {integrationHealth.summary.pendingOver24h} · Shipping meta kosong:{" "}
+                {integrationHealth.summary.missingShippingMeta} · Payment gagal 7 hari:{" "}
+                {integrationHealth.summary.failedPayments7d}
+              </p>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">

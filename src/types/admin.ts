@@ -289,6 +289,14 @@ export type ProductStatus =
   | "DELETED";
 
 export type CategoryType = "PRODUK" | "FORUM" | "ARTICLE";
+export type ProductMode = "BIOMASS_MATERIAL" | "ORGANIC_PRODUCE";
+export type BiomassaType =
+  | "BIOCHAR"
+  | "SEKAM_PADI"
+  | "TONGKOL_JAGUNG"
+  | "TEMPURUNG_KELAPA"
+  | "WOOD_CHIP"
+  | "OTHER";
 export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type PayoutStatus = "COMPLETED" | "FAILED" | "RELEASED" | "PENDING" | "ESCROW_HELD" | "REFUNDED";
 
@@ -305,6 +313,64 @@ export interface ProductListItem {
   createdAt: string;
   user: { fullName: string; email: string };
   category?: { name: string } | null;
+}
+
+export interface ProductDetail extends ProductListItem {
+  description?: string | null;
+  originalPrice?: number | string | null;
+  reservedStock?: number | string;
+  unit: string;
+  minOrder: number | string;
+  biomassaType: string;
+  productMode: ProductMode;
+  grade?: string | null;
+  province?: string | null;
+  regency?: string | null;
+  allowsSample: boolean;
+  sampleMaxQty?: number | string;
+  samplePricePerUnit?: number | string | null;
+  fertilizerType?: string | null;
+  isChemicalFree?: boolean;
+  cropType?: string | null;
+  availabilityType?: string;
+  nextHarvestDate?: string | null;
+  nextHarvestQtyTon?: number | string | null;
+  averageRating: number | string;
+  totalReviews: number;
+  totalSold: number;
+  viewCount: number;
+  updatedAt: string;
+  user: ProductListItem["user"] & {
+    id: string;
+    phone?: string | null;
+    avatarUrl?: string | null;
+    profile?: { companyName?: string | null } | null;
+  };
+  category?: {
+    id: string;
+    name: string;
+    productMode?: ProductMode | null;
+    biomassaType?: BiomassaType | null;
+  } | null;
+  images: Array<{
+    id: string;
+    url: string;
+    isPrimary: boolean;
+    order: number;
+  }>;
+  video?: {
+    id: string;
+    url: string;
+    thumbnailUrl?: string | null;
+  } | null;
+  technicalSpec?: Record<string, unknown> | null;
+  specs: Array<{ id: string; label: string; value: string; sortOrder: number }>;
+  _count: {
+    reviews: number;
+    orderItems: number;
+    certificates: number;
+    questions: number;
+  };
 }
 
 export type ProductCertificateStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -335,12 +401,46 @@ export interface ProductCertificateItem {
   reviewedBy?: { id: string; fullName: string } | null;
 }
 
+export interface StoreCertificateItem {
+  id: string;
+  supplierId: string;
+  title: string;
+  certificateType: string;
+  issuerName?: string | null;
+  certificateNumber?: string | null;
+  issuedAt?: string | null;
+  expiresAt?: string | null;
+  fileName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  status: ProductCertificateStatus;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
+  createdAt: string;
+  documentUrl?: string | null;
+  supplier: {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarUrl?: string | null;
+    profile?: { companyName?: string | null; businessType?: string | null } | null;
+  };
+  reviewedBy?: { id: string; fullName: string } | null;
+}
+
 export interface CategoryItem {
   id: string;
   name: string;
   description?: string | null;
   categoryType: CategoryType;
-  createdAt: string;
+  productMode?: ProductMode | null;
+  biomassaType?: BiomassaType | null;
+  createdAt?: string;
+  _count?: {
+    products?: number;
+    articles?: number;
+    forumPosts?: number;
+  };
 }
 
 export interface FinanceStats {
@@ -356,7 +456,7 @@ export interface TransactionItem {
   type: string;
   status: string;
   createdAt: string;
-  user?: { fullName: string; email: string };
+  user?: { fullName: string; email: string; avatarUrl?: string | null } | null;
   order?: { orderNumber: string };
 }
 

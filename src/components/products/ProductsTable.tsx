@@ -1,6 +1,9 @@
 "use client";
+
+import Link from "next/link";
 import AdminInfoBanner from "@/components/common/AdminInfoBanner";
 import ComponentCard from "@/components/common/ComponentCard";
+import ProductDetailModal from "@/components/products/ProductDetailModal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
@@ -17,15 +20,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  certifyProduct,
+  fetchProductDetail,
   fetchProducts,
   moderateProduct,
 } from "@/lib/api/admin";
 import { ApiError } from "@/lib/api-client";
 import { formatDate, formatIDR } from "@/lib/format";
-import type { ProductListItem, ProductStatus } from "@/types/admin";
+import type { ProductDetail, ProductListItem, ProductStatus } from "@/types/admin";
 import Pagination from "@/components/tables/Pagination";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 const STATUS_OPTIONS: ProductStatus[] = [
@@ -117,6 +119,10 @@ export default function ProductsTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailProduct, setDetailProduct] = useState<ProductDetail | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<ProductListItem | null>(null);
@@ -219,43 +225,17 @@ export default function ProductsTable() {
     void submitModeration(pendingProduct, pendingStatus, trimmed || undefined);
   }
 
-  async function handleCertify(product: ProductListItem) {
-    if (!product.id) {
-      alert("ID produk tidak valid. Muat ulang halaman.");
-      return;
-    }
-
-    const currentlyCertified =
-      product.isCertified === true || product.isCertified === ("true" as unknown as boolean);
-    const nextCertified = !currentlyCertified;
-
-    if (
-      !nextCertified &&
-      !confirm(
-        `Cabut sertifikasi "${product.name}"? Penjual tidak lagi ditandai sebagai produk terverifikasi.`,
-      )
-    ) {
-      return;
-    }
-
-    setActionId(product.id);
+  async function openProductDetail(productId: string) {
+    setDetailOpen(true);
+    setDetailLoading(true);
+    setDetailProduct(null);
+    setDetailError(null);
     try {
-      await certifyProduct(product.id, nextCertified);
-      try {
-        await load();
-      } catch {
-        alert(
-          "Sertifikasi tersimpan, tetapi daftar produk gagal dimuat ulang. Klik Segarkan atau muat ulang halaman.",
-        );
-      }
+      setDetailProduct(await fetchProductDetail(productId));
     } catch (err) {
-      const msg =
-        err instanceof ApiError
-          ? err.message
-          : "Gagal memperbarui sertifikasi. Periksa koneksi API dan sesi login.";
-      alert(msg);
+      setDetailError(err instanceof Error ? err.message : "Gagal memuat detail produk.");
     } finally {
-      setActionId(null);
+      setDetailLoading(false);
     }
   }
 
@@ -413,6 +393,14 @@ export default function ProductsTable() {
                     </TableCell>
                     <TableCell className="px-5 py-4 text-end">
                       <div className="flex flex-wrap justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={actionId === product.id}
+                          onClick={() => void openProductDetail(product.id)}
+                        >
+                          Detail
+                        </Button>
                         <select
                           disabled={actionId === product.id}
                           defaultValue=""
@@ -432,14 +420,11 @@ export default function ProductsTable() {
                             </option>
                           ))}
                         </select>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={actionId === product.id}
-                          onClick={() => handleCertify(product)}
-                        >
-                          {product.isCertified ? "Cabut sertifikasi" : "Sertifikasi"}
-                        </Button>
+                        <Link href="/products/certificates">
+                          <Button size="sm" variant="outline">
+                            Sertifikat
+                          </Button>
+                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -458,6 +443,14 @@ export default function ProductsTable() {
           />
         )}
       </ComponentCard>
+
+      <ProductDetailModal
+        isOpen={detailOpen}
+        product={detailProduct}
+        loading={detailLoading}
+        error={detailError}
+        onClose={() => setDetailOpen(false)}
+      />
 
       <Modal isOpen={modalOpen} onClose={closeModerationModal} className="max-w-lg p-6">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">

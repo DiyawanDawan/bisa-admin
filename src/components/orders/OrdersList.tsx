@@ -211,14 +211,14 @@ export default function OrdersList() {
                       <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                         <div className="flex flex-col gap-2">
                           <PartyAvatar
-                            name={o.buyer.fullName}
-                            avatarUrl={o.buyer.avatarUrl}
+                            name={o.buyer?.fullName ?? "—"}
+                            avatarUrl={o.buyer?.avatarUrl}
                             subtitle="Pembeli"
                             tone="buyer"
                           />
                           <PartyAvatar
-                            name={o.seller.fullName}
-                            avatarUrl={o.seller.avatarUrl}
+                            name={o.seller?.fullName ?? "—"}
+                            avatarUrl={o.seller?.avatarUrl}
                             subtitle="Supplier"
                             tone="seller"
                           />

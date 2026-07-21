@@ -106,8 +106,8 @@ export default function UsersTable({
         role: roleFilter || undefined,
         status: (statusFilter || undefined) as UserStatus | undefined,
       });
-      setItems(result.items);
-      setTotal(result.total);
+      setItems(result.items ?? []);
+      setTotal(result.total ?? 0);
     } catch {
       setError("Gagal memuat daftar pengguna.");
     } finally {

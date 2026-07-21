@@ -89,7 +89,7 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
   }, [load]);
 
   const statusChart = useMemo(() => {
-    if (!data?.byStatus.length) {
+    if (!data?.byStatus?.length) {
       return { labels: [], series: [], colors: [], raw: [] as { status: string; count: number }[] };
     }
     const sorted = [...data.byStatus].sort((a, b) => b.count - a.count);
@@ -102,12 +102,12 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
   }, [data]);
 
   const dailyCategories = useMemo(
-    () => data?.dailyOrders.map((p) => formatDayLabel(p.x)) ?? [],
+    () => (data?.dailyOrders ?? []).map((p) => formatDayLabel(p.x)),
     [data],
   );
 
   const monthlyCategories = useMemo(
-    () => data?.monthlyOrders.map((p) => formatMonthLabel(p.x)) ?? [],
+    () => (data?.monthlyOrders ?? []).map((p) => formatMonthLabel(p.x)),
     [data],
   );
 
@@ -136,6 +136,10 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
   }
 
   const { summary } = data;
+  const dailyOrders = data.dailyOrders ?? [];
+  const dailyRevenue = data.dailyRevenue ?? [];
+  const monthlyOrders = data.monthlyOrders ?? [];
+  const monthlyRevenue = data.monthlyRevenue ?? [];
 
   return (
     <div className="space-y-6">
@@ -233,14 +237,14 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
         <ComponentCard title="Volume order harian" desc="30 hari terakhir">
           <AdminAreaChart
             categories={dailyCategories}
-            series={{ name: "Order", data: data.dailyOrders.map((p) => p.y) }}
+            series={{ name: "Order", data: dailyOrders.map((p) => p.y) }}
             formatY={(v) => String(Math.round(v))}
           />
         </ComponentCard>
         <ComponentCard title="GMV harian" desc="Order selesai — 30 hari">
           <AdminAreaChart
             categories={dailyCategories}
-            series={{ name: "GMV", data: data.dailyRevenue.map((p) => p.y) }}
+            series={{ name: "GMV", data: dailyRevenue.map((p) => p.y) }}
             colors={["#059669"]}
             formatY={compactIdr}
             formatTooltipY={(v) => formatIDR(v)}
@@ -252,7 +256,7 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
         <ComponentCard title="Order per bulan" desc="12 bulan terakhir">
           <AdminBarChart
             categories={monthlyCategories}
-            series={{ name: "Order", data: data.monthlyOrders.map((p) => p.y) }}
+            series={{ name: "Order", data: monthlyOrders.map((p) => p.y) }}
             height={260}
             colors={["#0ea5e9"]}
           />
@@ -260,7 +264,7 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
         <ComponentCard title="GMV bulanan" desc="Order selesai">
           <AdminBarChart
             categories={monthlyCategories}
-            series={{ name: "GMV", data: data.monthlyRevenue.map((p) => p.y) }}
+            series={{ name: "GMV", data: monthlyRevenue.map((p) => p.y) }}
             height={260}
             formatY={compactIdr}
             formatTooltipY={(v) => formatIDR(v)}

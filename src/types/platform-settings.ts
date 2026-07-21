@@ -1,4 +1,10 @@
-export type PlatformSettingFieldType = "text" | "url" | "email" | "phone" | "number";
+export type PlatformSettingFieldType =
+  | "text"
+  | "url"
+  | "email"
+  | "phone"
+  | "number"
+  | "image";
 
 export interface PlatformSettingItem {
   key: string;
