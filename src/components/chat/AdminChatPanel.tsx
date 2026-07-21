@@ -116,7 +116,7 @@ export default function AdminChatPanel() {
   const loadThread = useCallback(async (negotiationId: string) => {
     setLoadingThread(true);
     try {
-      const data = await fetchChatThread(negotiationId, { page: 1, limit: 200 });
+      const data = await fetchChatThread(negotiationId, { page: 1 });
       setMessages(data.messages);
       const n = data.negotiation;
       setThreadMeta({

@@ -112,7 +112,7 @@ export default function DisputeMediationChat({
         setError(null);
       }
       try {
-        const data = await fetchDisputeChat(orderId, { page: 1, limit: 200 });
+        const data = await fetchDisputeChat(orderId, { page: 1 });
         setThread(data);
         setMessages(data.messages);
         syncMediation(data.mediation);
