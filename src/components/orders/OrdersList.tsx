@@ -93,14 +93,14 @@ export default function OrdersList() {
     load();
   }, [load]);
 
+  const handleStatusClick = useCallback((s: string) => {
+    setStatus(s);
+    document.getElementById("orders-table")?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
   return (
     <div className="space-y-8">
-      <OrdersStatsPanel
-        onStatusClick={(s) => {
-          setStatus(s);
-          document.getElementById("orders-table")?.scrollIntoView({ behavior: "smooth" });
-        }}
-      />
+      <OrdersStatsPanel onStatusClick={handleStatusClick} />
 
       <div id="orders-table" className="space-y-4 scroll-mt-6">
         <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">

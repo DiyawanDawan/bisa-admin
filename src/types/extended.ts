@@ -136,6 +136,24 @@ export interface WalletListItem {
   };
 }
 
+export interface ForumCommentAdmin {
+  id: string;
+  content: string;
+  mediaUrls?: Array<{ url: string; type?: string } | string> | null;
+  upvotes: number;
+  downvotes: number;
+  parentId?: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    fullName: string;
+    email?: string;
+    role: string;
+    avatarUrl?: string | null;
+  };
+  replies?: ForumCommentAdmin[];
+}
+
 export interface ForumPostAdmin {
   id: string;
   title: string;
@@ -168,6 +186,7 @@ export interface ForumPostAdmin {
     bannerUrl?: string | null;
     memberCount?: number;
   } | null;
+  comments?: ForumCommentAdmin[];
   _count: { comments: number };
 }
 

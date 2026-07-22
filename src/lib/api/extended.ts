@@ -15,6 +15,7 @@ import type {
   AdminIotDeviceItem,
   AdminIotProvisionResult,
   ForumCategoryOption,
+  ForumCommentAdmin,
   ForumGroupAdmin,
   ForumPostAdmin,
   MarketTrendItem,
@@ -183,6 +184,17 @@ export async function updateForumPostAdmin(
   },
 ): Promise<ForumPostAdmin> {
   const res = await apiPatch<ForumPostAdmin>(`/admin/forum/posts/${id}`, payload);
+  return res.data;
+}
+
+export async function createForumCommentAdmin(
+  postId: string,
+  payload: { content: string; parentId?: string },
+): Promise<ForumCommentAdmin> {
+  const res = await apiPost<ForumCommentAdmin>(
+    `/admin/forum/posts/${postId}/comments`,
+    payload,
+  );
   return res.data;
 }
 

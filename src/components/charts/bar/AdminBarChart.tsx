@@ -43,8 +43,7 @@ export default function AdminBarChart({
   extraOptions,
 }: AdminBarChartProps) {
   const { baseChart } = useApexChartTheme();
-  const safeCategories = asCategories(categories);
-
+  const safeCategories = useMemo(() => asCategories(categories), [categories]);
   const apexSeries = useMemo(() => normalizeChartSeries(series), [series]);
 
   const options: ApexOptions = useMemo(

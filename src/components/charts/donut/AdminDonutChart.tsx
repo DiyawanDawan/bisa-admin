@@ -35,8 +35,11 @@ export default function AdminDonutChart({
   emptyMessage = "Belum ada data.",
 }: AdminDonutChartProps) {
   const { baseChart, isDark } = useApexChartTheme();
-  const safeLabels = asArray(labels);
-  const safeSeries = asArray(series).map((v) => Number(v) || 0);
+  const safeLabels = useMemo(() => asArray(labels), [labels]);
+  const safeSeries = useMemo(
+    () => asArray(series).map((v) => Number(v) || 0),
+    [series],
+  );
 
   const hasData = safeSeries.length > 0 && safeSeries.some((v) => Number(v) > 0);
 

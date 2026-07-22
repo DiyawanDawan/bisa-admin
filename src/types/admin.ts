@@ -467,6 +467,50 @@ export interface PlatformFee {
   type: string;
   isActive: boolean;
   description?: string | null;
+  applyMode?: "AUTO" | "GENERAL" | "SPECIFIC" | string;
+  applyScopes?: string[];
+}
+
+export interface PayoutBankAdminItem {
+  id: string;
+  name: string;
+  code: string;
+  channelType?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  minAmount?: number | null;
+  maxAmount?: number | null;
+  flightTime?: string | null;
+  logoUrl?: string | null;
+  isActive: boolean;
+  usage: {
+    accountCount: number;
+    payoutCount: number;
+    payoutVolume: number;
+    pendingPayoutCount: number;
+  };
+  canDelete: boolean;
+}
+
+export interface PaymentChannelAdminItem {
+  id: string;
+  name: string;
+  code: string;
+  group?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  minAmount?: number | null;
+  maxAmount?: number | null;
+  settlementTime?: string | null;
+  xenditType?: string | null;
+  logoUrl?: string | null;
+  isActive: boolean;
+  usage: {
+    transactionCount: number;
+    paidVolume: number;
+    platformAccountCount: number;
+  };
+  canDelete: boolean;
 }
 
 export interface PayoutItem {
@@ -474,6 +518,7 @@ export interface PayoutItem {
   amount: number;
   status: string;
   createdAt: string;
+  externalId?: string | null;
   user?: { fullName: string; email: string };
 }
 

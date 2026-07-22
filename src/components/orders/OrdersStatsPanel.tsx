@@ -11,7 +11,7 @@ import { fetchOrderAnalytics } from "@/lib/api/extended";
 import { formatIDR } from "@/lib/format";
 import type { OrderAnalytics } from "@/types/extended";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Menunggu bayar",
@@ -67,7 +67,7 @@ type Props = {
   onStatusClick?: (status: string) => void;
 };
 
-export default function OrdersStatsPanel({ onStatusClick }: Props) {
+function OrdersStatsPanel({ onStatusClick }: Props) {
   const [data, setData] = useState<OrderAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +111,39 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
     [data],
   );
 
+  const statusBarSeries = useMemo(
+    () => ({ name: "Jumlah", data: statusChart.series }),
+    [statusChart.series],
+  );
+
+  const statusBarExtra = useMemo(
+    () => ({
+      dataLabels: { enabled: true },
+      legend: { show: false },
+    }),
+    [],
+  );
+
+  const dailyOrderSeries = useMemo(
+    () => ({ name: "Order", data: (data?.dailyOrders ?? []).map((p) => p.y) }),
+    [data],
+  );
+
+  const dailyRevenueSeries = useMemo(
+    () => ({ name: "GMV", data: (data?.dailyRevenue ?? []).map((p) => p.y) }),
+    [data],
+  );
+
+  const monthlyOrderSeries = useMemo(
+    () => ({ name: "Order", data: (data?.monthlyOrders ?? []).map((p) => p.y) }),
+    [data],
+  );
+
+  const monthlyRevenueSeries = useMemo(
+    () => ({ name: "GMV", data: (data?.monthlyRevenue ?? []).map((p) => p.y) }),
+    [data],
+  );
+
   if (loading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -136,10 +169,6 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
   }
 
   const { summary } = data;
-  const dailyOrders = data.dailyOrders ?? [];
-  const dailyRevenue = data.dailyRevenue ?? [];
-  const monthlyOrders = data.monthlyOrders ?? [];
-  const monthlyRevenue = data.monthlyRevenue ?? [];
 
   return (
     <div className="space-y-6">
@@ -220,15 +249,12 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
         <ComponentCard title="Status per jumlah" desc="Bar horizontal">
           <AdminBarChart
             categories={statusChart.labels}
-            series={{ name: "Jumlah", data: statusChart.series }}
+            series={statusBarSeries}
             horizontal
             colors={statusChart.colors}
             height={300}
             emptyMessage="Belum ada data status."
-            extraOptions={{
-              dataLabels: { enabled: true },
-              legend: { show: false },
-            }}
+            extraOptions={statusBarExtra}
           />
         </ComponentCard>
       </div>
@@ -237,14 +263,14 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
         <ComponentCard title="Volume order harian" desc="30 hari terakhir">
           <AdminAreaChart
             categories={dailyCategories}
-            series={{ name: "Order", data: dailyOrders.map((p) => p.y) }}
+            series={dailyOrderSeries}
             formatY={(v) => String(Math.round(v))}
           />
         </ComponentCard>
         <ComponentCard title="GMV harian" desc="Order selesai — 30 hari">
           <AdminAreaChart
             categories={dailyCategories}
-            series={{ name: "GMV", data: dailyRevenue.map((p) => p.y) }}
+            series={dailyRevenueSeries}
             colors={["#059669"]}
             formatY={compactIdr}
             formatTooltipY={(v) => formatIDR(v)}
@@ -256,7 +282,7 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
         <ComponentCard title="Order per bulan" desc="12 bulan terakhir">
           <AdminBarChart
             categories={monthlyCategories}
-            series={{ name: "Order", data: monthlyOrders.map((p) => p.y) }}
+            series={monthlyOrderSeries}
             height={260}
             colors={["#0ea5e9"]}
           />
@@ -264,7 +290,7 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
         <ComponentCard title="GMV bulanan" desc="Order selesai">
           <AdminBarChart
             categories={monthlyCategories}
-            series={{ name: "GMV", data: monthlyRevenue.map((p) => p.y) }}
+            series={monthlyRevenueSeries}
             height={260}
             formatY={compactIdr}
             formatTooltipY={(v) => formatIDR(v)}
@@ -274,3 +300,6 @@ export default function OrdersStatsPanel({ onStatusClick }: Props) {
     </div>
   );
 }
+
+/** Isolasi dari re-render tabel saat filter status — ApexCharts crash jika di-update ulang. */
+export default memo(OrdersStatsPanel);

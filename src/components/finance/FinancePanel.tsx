@@ -18,9 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import WalletsList from "@/components/finance/WalletsList";
+import PaymentChannelsManager from "@/components/finance/PaymentChannelsManager";
 import Pagination from "@/components/tables/Pagination";
 import {
-  approvePayout,
   createFee,
   deleteFee,
   exportFinanceReport,
@@ -36,7 +36,7 @@ import type { FinanceStats, PayoutItem, PlatformFee, TransactionItem } from "@/t
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-type Tab = "overview" | "transactions" | "fees" | "payouts" | "wallets" | "export";
+type Tab = "overview" | "transactions" | "fees" | "payouts" | "wallets" | "channels" | "export";
 
 const FEE_TYPES = [
   "TRANSACTION_FEE",
@@ -60,9 +60,24 @@ const FEE_TYPE_LABELS: Record<(typeof FEE_TYPES)[number], string> = {
   VAT: "PPN",
 };
 
+const FEE_SCOPE_OPTIONS = [
+  { value: "CHECKOUT", label: "Checkout (semua)" },
+  { value: "WITHDRAWAL", label: "Penarikan" },
+  { value: "BIOMASS", label: "Produk biomassa" },
+  { value: "CARBON", label: "Produk karbon" },
+  { value: "SUBSCRIPTION", label: "Langganan" },
+] as const;
+
+const APPLY_MODE_LABELS: Record<string, string> = {
+  AUTO: "Otomatis (default tipe)",
+  GENERAL: "Umum (checkout)",
+  SPECIFIC: "Khusus (pilih scope)",
+};
+
 const TABS: { id: Tab; label: string; hint: string }[] = [
   { id: "overview", label: "Ringkasan", hint: "Grafik & KPI" },
-  { id: "payouts", label: "Penarikan", hint: "Antrean approve" },
+  { id: "payouts", label: "Penarikan", hint: "Riwayat penarikan" },
+  { id: "channels", label: "Bank & bayar", hint: "Channel & payout bank" },
   { id: "transactions", label: "Transaksi", hint: "Ledger escrow" },
   { id: "fees", label: "Biaya platform", hint: "Fee & komisi" },
   { id: "wallets", label: "Dompet user", hint: "Saldo supplier" },
@@ -135,13 +150,14 @@ export default function FinancePanel() {
   const [feeCalcType, setFeeCalcType] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
   const [feeAmount, setFeeAmount] = useState("");
   const [feeDescription, setFeeDescription] = useState("");
+  const [feeApplyMode, setFeeApplyMode] = useState<"AUTO" | "GENERAL" | "SPECIFIC">("AUTO");
+  const [feeApplyScopes, setFeeApplyScopes] = useState<string[]>([]);
   const [creatingFee, setCreatingFee] = useState(false);
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
   const [feeActionId, setFeeActionId] = useState<string | null>(null);
-  const [payoutActionId, setPayoutActionId] = useState<string | null>(null);
 
-  const pendingPayouts = useMemo(
-    () => payouts.filter((p) => ["PENDING", "PROCESSING"].includes(p.status.toUpperCase())).length,
+  const inProgressPayouts = useMemo(
+    () => payouts.filter((p) => p.status.toUpperCase() === "PENDING").length,
     [payouts],
   );
 
@@ -157,7 +173,7 @@ export default function FinancePanel() {
   }, []);
 
   const loadTab = useCallback(async () => {
-    if (tab === "overview" || tab === "export" || tab === "wallets") return;
+    if (tab === "overview" || tab === "export" || tab === "wallets" || tab === "channels") return;
     setLoading(true);
     setError(null);
     try {
@@ -240,9 +256,9 @@ export default function FinancePanel() {
         id: t.id,
         label: t.label,
         hint: t.hint,
-        badge: t.id === "payouts" ? pendingPayouts : undefined,
+        badge: t.id === "payouts" ? inProgressPayouts : undefined,
       })),
-    [pendingPayouts],
+    [inProgressPayouts],
   );
 
   async function handleFeeUpdate(fee: PlatformFee, isActive: boolean) {
@@ -263,6 +279,8 @@ export default function FinancePanel() {
     setFeeCalcType("PERCENTAGE");
     setFeeAmount("");
     setFeeDescription("");
+    setFeeApplyMode("AUTO");
+    setFeeApplyScopes([]);
     setShowFeeForm(false);
   }
 
@@ -272,6 +290,10 @@ export default function FinancePanel() {
     setFeeCalcType(fee.type as "PERCENTAGE" | "FIXED");
     setFeeAmount(String(fee.amount));
     setFeeDescription(fee.description ?? "");
+    setFeeApplyMode(
+      fee.applyMode === "GENERAL" || fee.applyMode === "SPECIFIC" ? fee.applyMode : "AUTO",
+    );
+    setFeeApplyScopes(Array.isArray(fee.applyScopes) ? fee.applyScopes : []);
     setShowFeeForm(true);
     setError(null);
   }
@@ -286,11 +308,15 @@ export default function FinancePanel() {
     setCreatingFee(true);
     setError(null);
     try {
+      const scopePayload =
+        feeApplyMode === "SPECIFIC" ? feeApplyScopes : feeApplyMode === "GENERAL" ? ["CHECKOUT"] : undefined;
       if (editingFeeId) {
         await updateFee(editingFeeId, {
           amount,
           type: feeCalcType,
           description: feeDescription.trim() || null,
+          applyMode: feeApplyMode,
+          applyScopes: scopePayload ?? null,
         });
       } else {
         await createFee({
@@ -299,6 +325,8 @@ export default function FinancePanel() {
           type: feeCalcType,
           description: feeDescription.trim() || undefined,
           isActive: true,
+          applyMode: feeApplyMode,
+          applyScopes: scopePayload,
         });
       }
       resetFeeForm();
@@ -328,23 +356,6 @@ export default function FinancePanel() {
       setError(err instanceof Error ? err.message : "Gagal menghapus biaya.");
     } finally {
       setFeeActionId(null);
-    }
-  }
-
-  async function handlePayout(id: string, status: "COMPLETED" | "FAILED") {
-    const label = status === "COMPLETED" ? "menyetujui" : "menolak";
-    if (!confirm(`Yakin ingin ${label} penarikan ini?`)) return;
-    setPayoutActionId(id);
-    setError(null);
-    try {
-      await approvePayout(id, status);
-      const res = await fetchPayouts({ page: 1, limit: 30 });
-      setPayouts(res.items);
-      await loadStats();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memproses penarikan.");
-    } finally {
-      setPayoutActionId(null);
     }
   }
 
@@ -437,10 +448,10 @@ export default function FinancePanel() {
               <ul className="divide-y divide-gray-100 text-sm dark:divide-gray-800">
                 <li className="flex items-center justify-between gap-3 py-3 first:pt-0">
                   <span className="text-gray-700 dark:text-gray-300">
-                    Penarikan menunggu persetujuan
+                    Penarikan menunggu webhook Xendit
                   </span>
-                  <Badge color={pendingPayouts > 0 ? "error" : "success"} size="sm">
-                    {pendingPayouts}
+                  <Badge color={inProgressPayouts > 0 ? "warning" : "success"} size="sm">
+                    {inProgressPayouts}
                   </Badge>
                 </li>
                 <li className="flex items-center justify-between gap-3 py-3 last:pb-0">
@@ -452,7 +463,7 @@ export default function FinancePanel() {
               </ul>
               <div className="mt-5 flex flex-wrap gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
                 <Button size="sm" onClick={() => selectTab("payouts")}>
-                  Buka antrean penarikan
+                  Riwayat penarikan
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => selectTab("fees")}>
                   Kelola biaya
@@ -468,13 +479,21 @@ export default function FinancePanel() {
 
       {tab === "payouts" && (
         <ComponentCard
-          title="Antrean penarikan dana"
-          desc="Setujui atau tolak permintaan withdraw supplier. Prioritas: status PENDING."
+          title="Riwayat penarikan dana"
+          desc="Penarikan supplier diproses otomatis via Xendit Payout API. Status final (berhasil/gagal) diperbarui oleh webhook callback token — tidak perlu approve manual admin."
         >
+          <AdminInfoBanner className="mb-4">
+            Setelah supplier withdraw di mobile, backend memanggil Xendit lalu menunggu webhook{" "}
+            <code className="text-xs">/payments/payout-webhook</code>. Status PENDING artinya
+            transfer bank masih diproses gateway, bukan antrean persetujuan admin.
+          </AdminInfoBanner>
           {loading ? (
             <div className="h-40 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
           ) : payouts.length === 0 ? (
-            <p className="py-10 text-center text-sm text-gray-500">Tidak ada antrean penarikan.</p>
+            <p className="py-10 text-center text-sm text-gray-500">
+              Belum ada riwayat penarikan. Muncul otomatis setelah supplier withdraw dari dompet
+              (butuh Xendit payout key + webhook).
+            </p>
           ) : (
             <>
             <Table>
@@ -490,16 +509,24 @@ export default function FinancePanel() {
                     Status
                   </TableCell>
                   <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
-                    Diajukan
+                    Referensi
                   </TableCell>
-                  <TableCell isHeader className="px-4 py-3 text-end text-theme-xs text-gray-500">
-                    Aksi
+                  <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
+                    Diajukan
                   </TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payouts.map((p) => {
-                  const canAct = ["PENDING", "PROCESSING"].includes(p.status.toUpperCase());
+                  const st = p.status.toUpperCase();
+                  const processLabel =
+                    st === "PENDING"
+                      ? "Menunggu webhook Xendit"
+                      : st === "RELEASED"
+                        ? "Selesai (webhook)"
+                        : st === "FAILED"
+                          ? "Gagal (webhook/refund)"
+                          : p.status;
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="px-4 py-3 text-sm">
@@ -516,31 +543,12 @@ export default function FinancePanel() {
                           {p.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-sm text-gray-500">
-                        {formatDate(p.createdAt)}
+                      <TableCell className="px-4 py-3 text-theme-xs text-gray-500">
+                        {p.externalId ?? "—"}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-end">
-                        {canAct ? (
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              disabled={payoutActionId === p.id}
-                              onClick={() => handlePayout(p.id, "COMPLETED")}
-                            >
-                              Setujui
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={payoutActionId === p.id}
-                              onClick={() => handlePayout(p.id, "FAILED")}
-                            >
-                              Tolak
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-theme-xs text-gray-400">Selesai</span>
-                        )}
+                      <TableCell className="px-4 py-3 text-sm text-gray-500">
+                        <span className="block">{formatDate(p.createdAt)}</span>
+                        <span className="text-theme-xs text-gray-400">{processLabel}</span>
                       </TableCell>
                     </TableRow>
                   );
@@ -689,7 +697,9 @@ export default function FinancePanel() {
         <ComponentCard title="Pengaturan biaya platform">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-gray-500">
-              Biaya diterapkan saat checkout / withdraw (persentase atau nominal tetap).
+              Biaya aktif tampil di checkout mobile sesuai mode: otomatis per tipe, umum
+              (checkout), atau khusus (biomassa/karbon/penarikan). Matikan yang tidak ingin
+              dipakai.
             </p>
             <Button
               size="sm"
@@ -756,7 +766,41 @@ export default function FinancePanel() {
                     placeholder="Opsional"
                   />
                 </div>
+                <div className="sm:col-span-2">
+                  <Label>Mode penerapan</Label>
+                  <select
+                    value={feeApplyMode}
+                    onChange={(e) =>
+                      setFeeApplyMode(e.target.value as "AUTO" | "GENERAL" | "SPECIFIC")
+                    }
+                    className={selectClass}
+                  >
+                    <option value="AUTO">{APPLY_MODE_LABELS.AUTO}</option>
+                    <option value="GENERAL">{APPLY_MODE_LABELS.GENERAL}</option>
+                    <option value="SPECIFIC">{APPLY_MODE_LABELS.SPECIFIC}</option>
+                  </select>
+                </div>
               </div>
+              {feeApplyMode === "SPECIFIC" && (
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {FEE_SCOPE_OPTIONS.map((s) => (
+                    <label key={s.value} className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={feeApplyScopes.includes(s.value)}
+                        onChange={(e) => {
+                          setFeeApplyScopes((prev) =>
+                            e.target.checked
+                              ? [...prev, s.value]
+                              : prev.filter((x) => x !== s.value),
+                          );
+                        }}
+                      />
+                      {s.label}
+                    </label>
+                  ))}
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button type="submit" size="sm" disabled={creatingFee || !feeAmount}>
                   {creatingFee
@@ -789,6 +833,9 @@ export default function FinancePanel() {
                     Nilai
                   </TableCell>
                   <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
+                    Mode
+                  </TableCell>
+                  <TableCell isHeader className="px-4 py-3 text-theme-xs text-gray-500">
                     Status
                   </TableCell>
                   <TableCell isHeader className="px-4 py-3 text-end text-theme-xs text-gray-500">
@@ -809,6 +856,12 @@ export default function FinancePanel() {
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm font-semibold text-brand-700 dark:text-brand-400">
                       {formatFeeValue(fee)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-theme-xs text-gray-500">
+                      <p>{APPLY_MODE_LABELS[fee.applyMode ?? "AUTO"] ?? fee.applyMode}</p>
+                      {Array.isArray(fee.applyScopes) && fee.applyScopes.length > 0 && (
+                        <p className="mt-0.5">{fee.applyScopes.join(", ")}</p>
+                      )}
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <Badge color={fee.isActive ? "success" : "warning"} size="sm">
@@ -851,6 +904,8 @@ export default function FinancePanel() {
           )}
         </ComponentCard>
       )}
+
+      {tab === "channels" && <PaymentChannelsManager />}
 
       {tab === "wallets" && (
         <ComponentCard

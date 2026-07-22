@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { fetchUsers } from "@/lib/api/admin";
 import {
+  createForumCommentAdmin,
   createForumPostAdmin,
   fetchForumCategoriesAdmin,
   fetchForumGroupsAdmin,
@@ -22,7 +23,7 @@ import {
   updateForumPostAdmin,
 } from "@/lib/api/extended";
 import { formatDate } from "@/lib/format";
-import type { ForumGroupAdmin, ForumPostAdmin } from "@/types/extended";
+import type { ForumCommentAdmin, ForumGroupAdmin, ForumPostAdmin } from "@/types/extended";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -104,6 +105,9 @@ export default function ForumModeration() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [replyTo, setReplyTo] = useState<ForumCommentAdmin | null>(null);
+  const [commentSaving, setCommentSaving] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 350);
@@ -191,12 +195,37 @@ export default function ForumModeration() {
   async function openDetail(id: string) {
     setDetailLoading(true);
     setError(null);
+    setCommentText("");
+    setReplyTo(null);
     try {
       setDetail(await fetchForumPostAdmin(id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat detail.");
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+  async function submitComment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!detail) return;
+    const content = commentText.trim();
+    if (!content) return;
+    setCommentSaving(true);
+    setError(null);
+    try {
+      await createForumCommentAdmin(detail.id, {
+        content,
+        parentId: replyTo?.id,
+      });
+      setCommentText("");
+      setReplyTo(null);
+      setDetail(await fetchForumPostAdmin(detail.id));
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengirim komentar.");
+    } finally {
+      setCommentSaving(false);
     }
   }
 
@@ -261,8 +290,8 @@ export default function ForumModeration() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-brand-100 bg-brand-50/80 px-4 py-3 text-sm text-gray-700 dark:border-brand-900/40 dark:bg-brand-500/10 dark:text-gray-300">
-        Buat dan edit posting forum atas nama admin atau pengguna. Status: terbit, draft, atau arsip.
-        Detail menampilkan avatar penulis, banner grup, dan media lampiran.
+        Klik judul postingan untuk membuka detail. Di panel detail, admin bisa membalas
+        komentar komunitas (tampil sebagai akun admin).
       </div>
 
       {groups.length > 0 && (
@@ -489,10 +518,22 @@ export default function ForumModeration() {
                       {items.map((p) => {
                         const media = mediaList(p.mediaUrls);
                         const authorName = p.user?.fullName ?? "Penulis";
+                        const selected = detail?.id === p.id;
                         return (
-                          <TableRow key={p.id}>
+                          <TableRow
+                            key={p.id}
+                            className={
+                              selected
+                                ? "bg-brand-50/70 dark:bg-brand-500/10"
+                                : undefined
+                            }
+                          >
                             <TableCell className="max-w-sm px-4 py-3">
-                              <div className="flex gap-3">
+                              <button
+                                type="button"
+                                onClick={() => openDetail(p.id)}
+                                className="flex w-full gap-3 text-left transition hover:opacity-90"
+                              >
                                 {media[0] ? (
                                   <AdminMediaImage
                                     src={media[0].url}
@@ -514,7 +555,9 @@ export default function ForumModeration() {
                                   />
                                 )}
                                 <div className="min-w-0">
-                                  <p className="truncate text-sm font-medium">{p.title}</p>
+                                  <p className="truncate text-sm font-medium text-brand-700 hover:underline dark:text-brand-400">
+                                    {p.title}
+                                  </p>
                                   <p className="line-clamp-2 text-theme-xs text-gray-500">
                                     {contentPreview(p.content)}
                                   </p>
@@ -524,7 +567,7 @@ export default function ForumModeration() {
                                     {media.length > 0 ? ` · ${media.length} media` : ""}
                                   </p>
                                 </div>
-                              </div>
+                              </button>
                             </TableCell>
                             <TableCell className="px-4 py-3">
                               <div className="flex min-w-0 items-center gap-2">
@@ -587,12 +630,13 @@ export default function ForumModeration() {
         </div>
 
         <div className="xl:col-span-2">
-          <ComponentCard title="Detail posting" desc="Avatar, banner grup, media, tag">
+          <ComponentCard title="Detail posting" desc="Isi lengkap, thread komentar, balas sebagai admin">
             {detailLoading ? (
               <div className="h-48 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
             ) : !detail ? (
               <p className="py-10 text-center text-sm text-gray-500">
-                Pilih <strong>Detail</strong> pada postingan untuk melihat isi lengkap.
+                Klik judul postingan atau tombol <strong>Detail</strong> untuk membuka isi lengkap
+                dan komentar.
               </p>
             ) : (
               <div className="space-y-4 text-sm">
@@ -711,7 +755,7 @@ export default function ForumModeration() {
                   </div>
                   <div>
                     <dt className="text-gray-500">Komentar</dt>
-                    <dd>{detail._count.comments}</dd>
+                    <dd>{detail._count?.comments ?? detail.comments?.length ?? 0}</dd>
                   </div>
                   <div>
                     <dt className="text-gray-500">Votes</dt>
@@ -724,6 +768,126 @@ export default function ForumModeration() {
                     <dd>{formatDate(detail.createdAt)}</dd>
                   </div>
                 </dl>
+
+                <div className="border-t border-gray-100 pt-4 dark:border-gray-800">
+                  <p className="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">
+                    Komentar ({detail._count?.comments ?? 0})
+                  </p>
+
+                  <div className="mb-4 max-h-72 space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+                    {(detail.comments ?? []).length === 0 ? (
+                      <p className="text-theme-xs text-gray-500">Belum ada komentar.</p>
+                    ) : (
+                      (detail.comments ?? []).map((c) => (
+                        <div key={c.id} className="space-y-2">
+                          <div className="rounded-lg border border-gray-100 bg-gray-50/80 p-3 dark:border-gray-800 dark:bg-gray-900/40">
+                            <div className="mb-1.5 flex items-start gap-2">
+                              <UserAvatar
+                                src={c.user?.avatarUrl}
+                                name={c.user?.fullName ?? "User"}
+                                className="h-8 w-8"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                                    {c.user?.fullName}
+                                  </span>
+                                  {c.user?.role === "ADMIN" && (
+                                    <Badge color="success" size="sm">
+                                      Admin
+                                    </Badge>
+                                  )}
+                                  <span className="text-theme-xs text-gray-400">
+                                    {formatDate(c.createdAt)}
+                                  </span>
+                                </div>
+                                <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
+                                  {c.content}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyTo(c);
+                                    setCommentText("");
+                                  }}
+                                  className="mt-1.5 text-theme-xs font-medium text-brand-600 hover:underline"
+                                >
+                                  Balas
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          {(c.replies ?? []).map((r) => (
+                            <div
+                              key={r.id}
+                              className="ml-6 rounded-lg border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-gray-900/20"
+                            >
+                              <div className="mb-1 flex items-start gap-2">
+                                <UserAvatar
+                                  src={r.user?.avatarUrl}
+                                  name={r.user?.fullName ?? "User"}
+                                  className="h-7 w-7"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-sm font-medium">
+                                      {r.user?.fullName}
+                                    </span>
+                                    {r.user?.role === "ADMIN" && (
+                                      <Badge color="success" size="sm">
+                                        Admin
+                                      </Badge>
+                                    )}
+                                    <span className="text-theme-xs text-gray-400">
+                                      {formatDate(r.createdAt)}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
+                                    {r.content}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <form onSubmit={submitComment} className="space-y-2">
+                    {replyTo && (
+                      <div className="flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-theme-xs text-brand-800 dark:bg-brand-500/10 dark:text-brand-300">
+                        <span>
+                          Membalas <strong>{replyTo.user?.fullName}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setReplyTo(null)}
+                          className="font-medium hover:underline"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    )}
+                    <textarea
+                      rows={3}
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Tulis komentar sebagai admin…"
+                      maxLength={1000}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={commentSaving || !commentText.trim()}
+                      >
+                        {commentSaving ? "Mengirim…" : replyTo ? "Kirim balasan" : "Kirim komentar"}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
 
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={() => openEdit(detail.id)}>

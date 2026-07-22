@@ -130,7 +130,7 @@ export function buildAreaChartOptions(
       gradient: { opacityFrom: 0.45, opacityTo: 0.05 },
       ...extra?.fill,
     },
-    xaxis: { ...baseChart.xaxis, categories, ...extraXaxis },
+    xaxis: { ...baseChart.xaxis, categories: categories ?? [], ...extraXaxis },
     tooltip: { ...baseChart.tooltip, ...extraTooltip },
   };
 }
@@ -166,7 +166,13 @@ export function buildBarChartOptions(
       },
     },
     dataLabels: { enabled: false, ...extra?.dataLabels },
-    xaxis: { ...baseChart.xaxis, categories, ...extraXaxis },
-    tooltip: { ...baseChart.tooltip, ...extraTooltip },
+    xaxis: { ...baseChart.xaxis, categories: categories ?? [], ...extraXaxis },
+    // shared tooltip + horizontal bar sering crash ApexCharts (.length / .map undefined).
+    tooltip: {
+      ...baseChart.tooltip,
+      shared: false,
+      intersect: true,
+      ...extraTooltip,
+    },
   };
 }

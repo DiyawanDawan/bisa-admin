@@ -15,6 +15,8 @@ import type {
   DisputeChatMessage,
   FinanceStats,
   KYCQueueItem,
+  PaymentChannelAdminItem,
+  PayoutBankAdminItem,
   PayoutItem,
   PayoutStatus,
   PlatformFee,
@@ -576,6 +578,8 @@ export async function createFee(payload: {
   type: string;
   description?: string;
   isActive?: boolean;
+  applyMode?: string;
+  applyScopes?: string[];
 }): Promise<PlatformFee> {
   const res = await apiPost<PlatformFee>("/admin/finance/fees", payload);
   invalidateAdminGetCache("/admin/finance/fees");
@@ -589,6 +593,8 @@ export async function updateFee(
     type?: string;
     description?: string | null;
     isActive?: boolean;
+    applyMode?: string;
+    applyScopes?: string[] | null;
   },
 ): Promise<PlatformFee> {
   const res = await apiPatch<PlatformFee>(`/admin/finance/fees/${id}`, payload);
@@ -626,6 +632,126 @@ export async function approvePayout(
 ): Promise<unknown> {
   const res = await apiPatch(`/admin/finance/payouts/${id}/approve`, { status, note });
   return res.data;
+}
+
+export async function fetchPayoutBanksAdmin(params?: {
+  search?: string;
+  isActive?: boolean;
+}): Promise<PayoutBankAdminItem[]> {
+  const query = new URLSearchParams();
+  if (params?.search) query.set("search", params.search);
+  if (params?.isActive !== undefined) query.set("isActive", String(params.isActive));
+  const qs = query.toString();
+  const res = await apiGet<PayoutBankAdminItem[]>(
+    `/admin/finance/payout-banks${qs ? `?${qs}` : ""}`,
+  );
+  return Array.isArray(res.data) ? res.data : [];
+}
+
+export async function createPayoutBankAdmin(payload: {
+  name: string;
+  code: string;
+  channelType?: string;
+  country?: string;
+  currency?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  flightTime?: string;
+  logoUrl?: string;
+  isActive?: boolean;
+}): Promise<PayoutBankAdminItem> {
+  const res = await apiPost<PayoutBankAdminItem>("/admin/finance/payout-banks", payload);
+  invalidateAdminGetCache("/admin/finance/payout-banks");
+  return res.data;
+}
+
+export async function updatePayoutBankAdmin(
+  id: string,
+  payload: Partial<{
+    name: string;
+    code: string;
+    channelType: string | null;
+    country: string | null;
+    currency: string | null;
+    minAmount: number | null;
+    maxAmount: number | null;
+    flightTime: string | null;
+    logoUrl: string | null;
+    isActive: boolean;
+  }>,
+): Promise<PayoutBankAdminItem> {
+  const res = await apiPatch<PayoutBankAdminItem>(`/admin/finance/payout-banks/${id}`, payload);
+  invalidateAdminGetCache("/admin/finance/payout-banks");
+  return res.data;
+}
+
+export async function deletePayoutBankAdmin(id: string): Promise<void> {
+  await apiDelete(`/admin/finance/payout-banks/${id}`);
+  invalidateAdminGetCache("/admin/finance/payout-banks");
+}
+
+export async function fetchPaymentChannelsAdmin(params?: {
+  search?: string;
+  isActive?: boolean;
+}): Promise<PaymentChannelAdminItem[]> {
+  const query = new URLSearchParams();
+  if (params?.search) query.set("search", params.search);
+  if (params?.isActive !== undefined) query.set("isActive", String(params.isActive));
+  const qs = query.toString();
+  const res = await apiGet<PaymentChannelAdminItem[]>(
+    `/admin/finance/payment-channels${qs ? `?${qs}` : ""}`,
+  );
+  return Array.isArray(res.data) ? res.data : [];
+}
+
+export async function createPaymentChannelAdmin(payload: {
+  name: string;
+  code: string;
+  group?: string;
+  country?: string;
+  currency?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  settlementTime?: string;
+  xenditType?: string;
+  logoUrl?: string;
+  isActive?: boolean;
+}): Promise<PaymentChannelAdminItem> {
+  const res = await apiPost<PaymentChannelAdminItem>(
+    "/admin/finance/payment-channels",
+    payload,
+  );
+  invalidateAdminGetCache("/admin/finance/payment-channels");
+  return res.data;
+}
+
+export async function updatePaymentChannelAdmin(
+  id: string,
+  payload: Partial<{
+    name: string;
+    code: string;
+    group: string | null;
+    country: string | null;
+    currency: string | null;
+    minAmount: number | null;
+    maxAmount: number | null;
+    settlementTime: string | null;
+    xenditType: string | null;
+    logoUrl: string | null;
+    isActive: boolean;
+  }>,
+): Promise<PaymentChannelAdminItem> {
+  const res = await apiPatch<PaymentChannelAdminItem>(
+    `/admin/finance/payment-channels/${id}`,
+    payload,
+  );
+  invalidateAdminGetCache("/admin/finance/payment-channels");
+  return res.data;
+}
+
+export async function deletePaymentChannelAdmin(id: string): Promise<void> {
+  await apiDelete(`/admin/finance/payment-channels/${id}`);
+  invalidateAdminGetCache("/admin/finance/payment-channels");
 }
 
 export async function exportFinanceReport(
